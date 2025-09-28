@@ -989,8 +989,8 @@ uniqueValueInfos: [
     map.addMany([featureForest, featureLayer]);
 
     document.getElementById('forestLayerToggle')?.addEventListener('change', (e) => {
-      forestLayerManuallyToggled = true;
-      featureForest.visible = e.target.checked;
+    forestLayerManuallyToggled = true;
+    featureForest.visible = e.target.checked;
     });
     document.getElementById('eventsLayerToggle')?.addEventListener('change', (e) => {
       featureLayer.visible = e.target.checked;
@@ -1055,12 +1055,12 @@ async function refreshForestVisibility(where) {
   const chk = document.getElementById('forestLayerToggle');
 
   // If the points layer has no forest field, just hide the polygon layer.
-  if (!FIELD.forest) {
-    featureForest.visible = false;
-    if (chk) chk.checked = false;
-    featureForest.definitionExpression = baseForestExpr;
-    return;
-  }
+  // if (!FIELD.forest) {
+  //   featureForest.visible = false;
+  //   if (chk) chk.checked = false;
+  //   featureForest.definitionExpression = baseForestExpr;
+  //   return;
+  // }
 
   // Get distinct forest names from the filtered points
   const res = await featureLayer.queryFeatures({
@@ -1075,25 +1075,25 @@ async function refreshForestVisibility(where) {
     .map(f => f.attributes[FIELD.forest])
     .filter(v => v != null && v !== "" && v !== "null" && v !== "undefined");
 
-  if (!names.length) {
-    // No forests in current result => hide polygon layer
-    featureForest.visible = false;
-    if (chk) chk.checked = false;
-    featureForest.definitionExpression = baseForestExpr;
-    return;
-  }
+  // if (!names.length) {
+  //   // No forests in current result => hide polygon layer
+  //   featureForest.visible = false;
+  //   if (chk) chk.checked = false;
+  //   featureForest.definitionExpression = baseForestExpr;
+  //   return;
+  // }
 
   // There ARE forests in the result: show only those polygons
-  const expr = `${baseForestExpr} AND ${FIELD.forest} IN (${sqlList(names)})`;
-  featureForest.definitionExpression = expr;
+  // const expr = `${baseForestExpr} AND ${FIELD.forest} IN (${sqlList(names)})`;
+  // featureForest.definitionExpression = expr;
 
-  // Respect manual OFF by the user; otherwise show it
-  if (forestLayerManuallyToggled && chk && chk.checked === false) {
-    featureForest.visible = false;
-  } else {
-    featureForest.visible = true;
-    if (chk) chk.checked = true;
-  }
+  // // Respect manual OFF by the user; otherwise show it
+  // if (forestLayerManuallyToggled && chk && chk.checked === false) {
+  //   featureForest.visible = false;
+  // } else {
+  //   featureForest.visible = true;
+  //   if (chk) chk.checked = true;
+  // }
 }
 
 
