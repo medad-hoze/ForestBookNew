@@ -648,16 +648,24 @@
     }
     const debouncedApply = debounce(applyFilters, 200);
 
-    function formatDateShort(ts) {
-      if (!ts) return '-';
-      const d = new Date(ts); if (isNaN(d)) return '-';
-      return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getFullYear()).slice(-2)}`;
-    }
-    function formatDateFull(date) {
-      if (!date) return '';
-      const d = new Date(date);
-      return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
-    }
+function formatDateShort(yearValue) {
+  if (!yearValue) return '-';
+  // If it's just a year number, return it
+  if (typeof yearValue === 'number' || !isNaN(yearValue)) {
+    return yearValue.toString();
+  }
+  // If it's a date, extract the year
+  const d = new Date(yearValue);
+  if (isNaN(d)) return '-';
+  return d.getFullYear().toString();
+}
+
+
+function formatDateFull(date) {
+  if (!date) return '';
+  const d = new Date(date);
+  return d.getFullYear().toString();
+}
     function getActiveFilters() {
       return {
         region: document.getElementById('region')?.value || "",
@@ -989,25 +997,24 @@ uniqueValueInfos: [
     });
 
     // ---------- Field resolution (avoid 400s) ----------
-    function resolveFieldsAfterLoad() {
-      eventTypeField = (function pickEventTypeField(layer) {
-        const candidates = ["EventType","EVENTTYPE","EVENT_TYPE","ActivityType","WorkType","TYPE"];
-        for (const c of candidates) if (hasField(layer, c)) return c;
-        const lower = layer.fields?.find(f => f.type === "string" && f.name.toLowerCase().includes("type"));
-        return lower?.name || null; // can be null
-      })(featureLayer);
+function resolveFieldsAfterLoad() {
+  eventTypeField = (function pickEventTypeField(layer) {
+    const candidates = ["EventType","EVENTTYPE","EVENT_TYPE","ActivityType","WorkType","TYPE"];
+    for (const c of candidates) if (hasField(layer, c)) return c;
+    const lower = layer.fields?.find(f => f.type === "string" && f.name.toLowerCase().includes("type"));
+    return lower?.name || null;
+  })(featureLayer);
 
-      FIELD = {
-        forest: firstExisting(featureLayer, ["ForestName","ForestName"]),
-        gush:   firstExisting(featureLayer, ["ForestGushName","GUSH"]),
-        parcel: firstExisting(featureLayer, ["HELKA","Parcel"]),
-        stand:  firstExisting(featureLayer, ["STAND_NO","StandNo"]),
-        area:   firstExisting(featureLayer, ["NET_AREA","AREA","Shape_Area"]),
-        start:  firstExisting(featureLayer, ["year","EventDate","Date","DATE"]),
-        end:    firstExisting(featureLayer, ["year"]),
-        type:   eventTypeField
-      };
-    }
+  FIELD = {
+    forest: firstExisting(featureLayer, ["ForestName","ForestName"]),
+    gush:   firstExisting(featureLayer, ["ForestGushName","GUSH"]),
+    parcel: firstExisting(featureLayer, ["HELKA","Parcel"]),
+    stand:  firstExisting(featureLayer, ["STAND_NO","StandNo"]),
+    area:   firstExisting(featureLayer, ["NET_AREA","AREA","Shape_Area"]),
+    year:   firstExisting(featureLayer, ["year","Year","YEAR"]), // Single year field
+    type:   eventTypeField
+  };
+}
 
     // ---------- WHERE (uses resolved fields only) ----------
 
@@ -1030,17 +1037,13 @@ function buildWhere() {
   if (FIELD.parcel && f.parcel) parts.push(`${FIELD.parcel} = ${sqlString(f.parcel)}`);
   if (FIELD.stand  && f.stand)  parts.push(`${FIELD.stand}  = ${sqlString(f.stand)}`);
 
-  // --- Time filter: use TIMESTAMP literals, not epoch numbers ---
-  if (currentTimeExtent && FIELD.start) {
-    const startLit = toEsriTimestampLiteral(currentTimeExtent.start.getTime());
-    const endLit   = toEsriTimestampLiteral(currentTimeExtent.end.getTime());
-
-    if (FIELD.end) {
-      // overlap logic: (end >= start) AND (start <= end)
-      parts.push(`( (${FIELD.end} IS NULL OR ${FIELD.end} >= ${startLit}) AND (${FIELD.start} <= ${endLit}) )`);
-    } else {
-      parts.push(`(${FIELD.start} BETWEEN ${startLit} AND ${endLit})`);
-    }
+  // Time filter for year field
+  if (currentTimeExtent && FIELD.year) {
+    const startYear = currentTimeExtent.start.getFullYear();
+    const endYear = currentTimeExtent.end.getFullYear();
+    
+    // Filter by year range
+    parts.push(`(${FIELD.year} >= ${startYear} AND ${FIELD.year} <= ${endYear})`);
   }
 
   return parts.join(" AND ");
@@ -1094,22 +1097,18 @@ async function refreshForestVisibility(where) {
 }
 
 
-    // ---------- Apply filters ----------
 async function applyFilters(opts = {}) {
   const { skipExtent = false } = opts;
   const where = buildWhere();
 
-  // Apply WHERE to points
   featureLayer.definitionExpression = where;
 
-  // Sync forest polygons to only those forests found in the filtered points
   try {
     await refreshForestVisibility(where);
   } catch (e) {
     console.warn("refreshForestVisibility failed", e);
   }
 
-  // Fit extent to filtered points unless told not to (used by TimeSlider)
   if (!skipExtent) {
     try {
       const ext = await featureLayer.queryExtent({ where });
@@ -1125,8 +1124,8 @@ async function applyFilters(opts = {}) {
     }
   }
 
-  // Table + summary
-  const outFields = ["OBJECTID", FIELD.forest, FIELD.gush, FIELD.parcel, FIELD.stand, FIELD.area, FIELD.start, FIELD.type]
+  // Table + summary (updated field list)
+  const outFields = ["OBJECTID", FIELD.forest, FIELD.gush, FIELD.parcel, FIELD.stand, FIELD.area, FIELD.year, FIELD.type]
     .filter(Boolean);
   const result = await featureLayer.queryFeatures({ where, returnGeometry: false, outFields });
 
@@ -1138,8 +1137,6 @@ async function applyFilters(opts = {}) {
 
   await updateEventTypeCountsServer(where);
 }
-
-
     // ---------- Distinct dropdowns ----------
     async function populateOneDistinct(fieldName, selectId) {
       if (!fieldName) return;
@@ -1285,32 +1282,38 @@ async function updateEventTypeCountsServer(baseWhere) {
 }
 
 
-    // ---------- Time slider (stats via queryFeatures) ----------
 async function initializeTimeSlider() {
-  if (!FIELD.start) {
+  if (!FIELD.year) {
     const c = document.querySelector('.time-slider-container');
     if (c) c.style.display = 'none';
     return;
   }
 
+  // Query for min and max years
   const outStats = [
-    { statisticType: "min", onStatisticField: FIELD.start, outStatisticFieldName: "minStart" },
-    { statisticType: "max", onStatisticField: FIELD.start, outStatisticFieldName: "maxStart" }
+    { statisticType: "min", onStatisticField: FIELD.year, outStatisticFieldName: "minYear" },
+    { statisticType: "max", onStatisticField: FIELD.year, outStatisticFieldName: "maxYear" }
   ];
-  if (FIELD.end) outStats.push({ statisticType: "max", onStatisticField: FIELD.end, outStatisticFieldName: "maxEnd" });
 
   let minDate = null, maxDate = null;
   try {
-    const res = await featureLayer.queryFeatures({ where: "1=1", returnGeometry: false, outStatistics: outStats });
+    const res = await featureLayer.queryFeatures({ 
+      where: "1=1", 
+      returnGeometry: false, 
+      outStatistics: outStats 
+    });
+    
     const a = res.features?.[0]?.attributes || {};
-    const minStart = a.minStart ? new Date(a.minStart) : null;
-    const maxStart = a.maxStart ? new Date(a.maxStart) : null;
-    const maxEnd   = a.maxEnd   ? new Date(a.maxEnd)   : null;
+    const minYear = a.minYear;
+    const maxYear = a.maxYear;
 
-    minDate = minStart || null;
-    maxDate = (maxEnd && maxStart) ? (maxEnd > maxStart ? maxEnd : maxStart) : (maxEnd || maxStart || null);
+    if (minYear && maxYear) {
+      // Create dates from years (January 1st of each year)
+      minDate = new Date(minYear, 0, 1);
+      maxDate = new Date(maxYear, 11, 31); // December 31st of max year
+    }
   } catch (e) {
-    console.warn("time stats failed", e);
+    console.warn("year stats failed", e);
   }
 
   if (!minDate || !maxDate || isNaN(minDate) || isNaN(maxDate)) {
@@ -1326,45 +1329,59 @@ async function initializeTimeSlider() {
     timeVisible: false,
     labelFormatFunction: (value, type, element) => {
       const d = value instanceof Date ? value : new Date(value);
-      if (isNaN(d)) { element.textContent = ""; return; }
-      const Y = d.getFullYear();
-      const M = String(d.getMonth() + 1).padStart(2, "0");
-      const D = String(d.getDate()).padStart(2, "0");
-      element.textContent = `${D}-${M}-${Y}`;
+      if (isNaN(d)) { 
+        element.textContent = ""; 
+        return; 
+      }
+      // Display only the year
+      element.textContent = d.getFullYear().toString();
     },
     fullTimeExtent: { start: minDate, end: maxDate },
-    stops: { interval: { value: 1, unit: "months" } },
+    stops: { interval: { value: 1, unit: "years" } }, // Changed to years
     playRate: 2000
   });
 
   timeSlider.timeExtent = { start: minDate, end: maxDate };
   const datesEl = document.getElementById('timeSliderDates');
-  if (datesEl) datesEl.textContent = `${formatDateFull(minDate)} - ${formatDateFull(maxDate)}`;
+  if (datesEl) {
+    datesEl.textContent = `${minDate.getFullYear()} - ${maxDate.getFullYear()}`;
+  }
 
-timeSlider.watch("timeExtent", (value) => {
-  currentTimeExtent = value;
-  const datesEl = document.getElementById('timeSliderDates');
-  if (datesEl) datesEl.textContent = `${formatDateFull(value.start)} - ${formatDateFull(value.end)}`;
-
-  // Do NOT re-zoom when the slider moves
-  applyFilters({ skipExtent: true });
-});
+  timeSlider.watch("timeExtent", (value) => {
+    currentTimeExtent = value;
+    const datesEl = document.getElementById('timeSliderDates');
+    if (datesEl) {
+      datesEl.textContent = `${value.start.getFullYear()} - ${value.end.getFullYear()}`;
+    }
+    
+    // Do NOT re-zoom when the slider moves
+    applyFilters({ skipExtent: true });
+  });
 }
+
+
+
+
+
+
 
     function toEsriTimestampLiteral(ms) {
   // formats ms -> TIMESTAMP 'YYYY-MM-DD HH:MM:SS'
   const d = new Date(ms);
   // Use UTC to avoid timezone shifts on the server
   const Y = d.getUTCFullYear();
-  const M = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const D = String(d.getUTCDate()).padStart(2, "0");
-  const hh = String(d.getUTCHours()).padStart(2, "0");
-  const mm = String(d.getUTCMinutes()).padStart(2, "0");
-  const ss = String(d.getUTCSeconds()).padStart(2, "0");
+  const M = '1'
+  const D = '1'
+  const hh = '1'
+  const mm = '1'
+  const ss = '1'
   return `TIMESTAMP '${Y}-${M}-${D} ${hh}:${mm}:${ss}'`;
 }
 
-    // ---------- Table & Summary ----------
+
+
+
+// ---------- Update Info Table (modified for year display) ----------
 function updateInfoTable(features, FIELD) {
   const tbody = document.getElementById('infoTableBody');
   if (!tbody) return;
@@ -1387,10 +1404,12 @@ function updateInfoTable(features, FIELD) {
     const forest = FIELD.forest ? (a[FIELD.forest] ?? '-') : '-';
     let area = '-';
     if (FIELD.area) {
-      const v = Number(a[FIELD.area]); area = isFinite(v) ? v.toFixed(1) : '-';
+      const v = Number(a[FIELD.area]); 
+      area = isFinite(v) ? v.toFixed(1) : '-';
     }
-    const date = FIELD.start ? formatDateShort(a[FIELD.start]) : '-';
-    const et   = FIELD.type  ? (a[FIELD.type] ?? '-') : '-';
+    // Display year value
+    const year = FIELD.year ? formatDateShort(a[FIELD.year]) : '-';
+    const et = FIELD.type ? (a[FIELD.type] ?? '-') : '-';
 
     tr.innerHTML = `
       <td class="highlight-number">${stand}</td>
@@ -1398,7 +1417,7 @@ function updateInfoTable(features, FIELD) {
       <td>${gush}</td>
       <td>${forest}</td>
       <td>${area}</td>
-      <td>${date}</td>
+      <td>${year}</td>
       <td>${et}</td>
     `;
 
@@ -1411,6 +1430,7 @@ function updateInfoTable(features, FIELD) {
     tbody.appendChild(tr);
   });
 }
+
 
     function updateSummary(features, FIELD) {
       const el = document.getElementById('summaryInfo');
