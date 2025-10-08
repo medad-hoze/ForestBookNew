@@ -512,6 +512,18 @@
                 opacity: 1;
             }
         }
+.year-range {
+  margin-inline-start: 120px;   
+  padding-inline-start: 16px;    
+  border-inline-start: 1px solid #e6e6e6; 
+  display: flex;
+  gap: 10px;
+  align-items: end;
+}
+
+.year-range .date-group select {
+  min-width: 110px;
+}
     </style>
 </head>
 <body>
@@ -563,6 +575,20 @@
                     <option value="">הכל</option>
                 </select>
             </div>
+            <div class="year-range">
+  <div class="date-group">
+    <label>מ-שנה</label>
+    <select id="yearFrom">
+      <option value="">מההתחלה</option>
+    </select>
+  </div>
+  <div class="date-group">
+    <label>עד שנה</label>
+    <select id="yearTo">
+      <option value="">עד הסוף</option>
+    </select>
+  </div>
+</div>
         </div>
     </div>
     
@@ -1191,7 +1217,66 @@ window.addEventListener('DOMContentLoaded', () => {
   if (btnExpandTable) btnExpandTable.onclick = () => setLayout(2);
 });
 
+
+let minYearGlobal = null;
+let maxYearGlobal = null;
     
+function populateYearSelects(minYear, maxYear) {
+  const fromSel = document.getElementById('yearFrom');
+  const toSel   = document.getElementById('yearTo');
+  if (!fromSel || !toSel) return;
+
+  // ניקה אפשרויות קודמות (מלבד ברירת מחדל)
+  while (fromSel.options.length > 1) fromSel.remove(1);
+  while (toSel.options.length   > 1) toSel.remove(1);
+
+  for (let y = minYear; y <= maxYear; y++) {
+    const opt1 = document.createElement('option');
+    opt1.value = String(y);
+    opt1.textContent = String(y);
+    fromSel.appendChild(opt1);
+
+    const opt2 = document.createElement('option');
+    opt2.value = String(y);
+    opt2.textContent = String(y);
+    toSel.appendChild(opt2);
+  }
+}
+
+function getYearRangeFromSelects() {
+  const fromSel = document.getElementById('yearFrom');
+  const toSel   = document.getElementById('yearTo');
+  if (!fromSel || !toSel || !FIELD.year) return null;
+
+  const fromVal = fromSel.value ? Number(fromSel.value) : (minYearGlobal ?? null);
+  const toVal   = toSel.value   ? Number(toSel.value)   : (maxYearGlobal ?? null);
+
+  if (fromVal == null || toVal == null) return null;
+  // הבטח סדר נכון
+  const startY = Math.min(fromVal, toVal);
+  const endY   = Math.max(fromVal, toVal);
+  return { startY, endY };
+}
+
+function onYearSelectChange() {
+  const yr = getYearRangeFromSelects();
+  if (!yr) return;
+
+  // עדכן גם את ה־TimeSlider
+  if (timeSlider) {
+    const start = new Date(yr.startY, 0, 1);
+    const end   = new Date(yr.endY, 11, 31);
+    currentTimeExtent = { start, end };
+    timeSlider.timeExtent = currentTimeExtent;
+    const datesEl = document.getElementById('timeSliderDates');
+    if (datesEl) datesEl.textContent = `${yr.startY} - ${yr.endY}`;
+  }
+
+  applyFilters({ skipExtent: false });
+}
+
+
+
 
 function resolveFieldsAfterLoad() {
   eventTypeField = (function pickEventTypeField(layer) {
@@ -1213,6 +1298,148 @@ function resolveFieldsAfterLoad() {
   };
   
 }
+
+
+const FILTER_ORDER = [
+  { id: "DistrictName", fieldKey: "DistrictName" }, // מרחב
+  { id: "region",       fieldKey: "region"       }, // אזור
+  { id: "forest",       fieldKey: "forest"       }, // יער
+  { id: "gush",         fieldKey: "gush"         }, // גוש
+  { id: "parcel",       fieldKey: "parcel"       }, // חלקה
+  { id: "stand",        fieldKey: "stand"        }  // עומד
+];
+
+// Build a WHERE that includes: active event-type, year range/time slider,
+// and only the filters ABOVE a given index (so each dropdown reflects higher choices).
+function buildWhereForCascading(uptoIndexExclusive) {
+  const parts = ["1=1"];
+
+  // Event type card
+  if (activeEventType?.field && activeEventType?.value) {
+    parts.push(`${activeEventType.field} = ${sqlString(activeEventType.value)}`);
+  }
+
+  // Year range / time slider
+  if (FIELD.year) {
+    const yr = getYearRangeFromSelects();
+    if (yr) {
+      parts.push(`(${FIELD.year} >= ${yr.startY} AND ${FIELD.year} <= ${yr.endY})`);
+    } else if (currentTimeExtent) {
+      const sy = currentTimeExtent.start.getFullYear();
+      const ey = currentTimeExtent.end.getFullYear();
+      parts.push(`(${FIELD.year} >= ${sy} AND ${FIELD.year} <= ${ey})`);
+    }
+  }
+
+  const filters = getActiveFilters();
+  for (let i = 0; i < Math.min(uptoIndexExclusive, FILTER_ORDER.length); i++) {
+    const { id, fieldKey } = FILTER_ORDER[i];
+    const fName = FIELD[fieldKey];
+    const val   = filters[id];
+    if (fName && val) parts.push(`${fName} = ${sqlString(val)}`);
+  }
+  return parts.join(" AND ");
+}
+
+// Query distinct values for one field, under a given WHERE
+async function queryDistinctValues(fieldName, where) {
+  if (!fieldName) return [];
+  const q = await featureLayer.queryFeatures({
+    where,
+    outFields: [fieldName],
+    returnGeometry: false,
+    returnDistinctValues: true,
+    orderByFields: [fieldName]
+  });
+  return (q.features || [])
+    .map(f => f.attributes[fieldName])
+    .filter(v => v != null && v !== "" && v !== "null" && v !== "undefined");
+}
+
+// Replace options in a <select>, keep the first "הכל", try to preserve selection if still valid
+function setSelectOptions(selectId, values) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  const old = sel.value || "";
+  // clear (keep index 0 = "הכל")
+  while (sel.options.length > 1) sel.remove(1);
+  values.forEach(v => {
+    const opt = document.createElement('option');
+    opt.value = v; opt.textContent = v;
+    sel.appendChild(opt);
+  });
+  // keep previous selection if still available, else reset to ""
+  if (old && values.includes(old)) sel.value = old; else sel.value = "";
+}
+
+// Rebuild the dropdowns from a starting index downward (start changed → update below)
+async function rebuildCascadingFrom(startIndex = 0) {
+  for (let i = startIndex; i < FILTER_ORDER.length; i++) {
+    const { id, fieldKey } = FILTER_ORDER[i];
+    const where = buildWhereForCascading(i); // only filters above i, plus type/year
+    const values = await queryDistinctValues(FIELD[fieldKey], where);
+    setSelectOptions(id, values);
+  }
+}
+
+// When a higher filter changes, clear the ones below (UI) and rebuild them
+function clearBelow(startIndex) {
+  for (let i = startIndex + 1; i < FILTER_ORDER.length; i++) {
+    const sel = document.getElementById(FILTER_ORDER[i].id);
+    if (sel) sel.value = "";
+  }
+}
+
+// Hook change events for cascading behavior
+FILTER_ORDER.forEach(({ id }, idx) => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('change', async () => {
+    forestLayerManuallyToggled = false;
+    clearBelow(idx);
+    await rebuildCascadingFrom(idx + 1);
+    debouncedApply(); // refresh layer/table with full WHERE (all chosen filters)
+  });
+});
+
+// Rebuild all filters (used on boot and when year/type changes)
+async function rebuildAllFilters() {
+  // First, (re)build top-level using only type/year
+  await rebuildCascadingFrom(0);
+}
+
+// Replace your old populateFiltersServer with this:
+async function populateFiltersServer() {
+  // Ensure field mapping for region exists
+  FIELD.region = firstExisting(featureLayer, ["RegionName","REGION"]);
+  // Initial population based on *current* event-type + year (if any), no other filters
+  await rebuildAllFilters();
+}
+
+// Update cascading choices when event-type card or year range changes:
+const _origUpdateEventTypeCountsServer = updateEventTypeCountsServer;
+updateEventTypeCountsServer = async function(baseWhere) {
+  await _origUpdateEventTypeCountsServer(baseWhere);
+  // If event type changed counts, also refresh the cascades so numbers reflect it
+  await rebuildAllFilters();
+};
+
+const _origOnYearSelectChange = onYearSelectChange;
+onYearSelectChange = function() {
+  _origOnYearSelectChange();
+  rebuildAllFilters();
+};
+
+// Also watch the TimeSlider (already calls applyFilters). Add a light cascade refresh:
+const _origInitializeTimeSlider = initializeTimeSlider;
+initializeTimeSlider = async function() {
+  await _origInitializeTimeSlider();
+  if (timeSlider) {
+    timeSlider.watch("timeExtent", debounce(async () => {
+      await rebuildAllFilters();
+    }, 250));
+  }
+};
 
 
 function sqlEscape(v){ return String(v).replace(/'/g,"''"); }
@@ -1237,12 +1464,16 @@ function buildWhere() {
   if (FIELD.parcel && f.parcel) parts.push(`${FIELD.parcel} = ${sqlString(f.parcel)}`);
   if (FIELD.stand  && f.stand)  parts.push(`${FIELD.stand}  = ${sqlString(f.stand)}`);
 
-  if (currentTimeExtent && FIELD.year) {
+if (FIELD.year) {
+  const yr = getYearRangeFromSelects();
+  if (yr) {
+    parts.push(`(${FIELD.year} >= ${yr.startY} AND ${FIELD.year} <= ${yr.endY})`);
+  } else if (currentTimeExtent) {
     const startYear = currentTimeExtent.start.getFullYear();
-    const endYear = currentTimeExtent.end.getFullYear();
-    
+    const endYear   = currentTimeExtent.end.getFullYear();
     parts.push(`(${FIELD.year} >= ${startYear} AND ${FIELD.year} <= ${endYear})`);
   }
+}
 
   return parts.join(" AND ");
 }
@@ -1277,6 +1508,15 @@ async function refreshForestVisibility(where) {
 
 
 async function applyFilters(opts = {}) {
+
+
+
+  const yFrom = document.getElementById('yearFrom');
+  const yTo   = document.getElementById('yearTo');
+  if (yFrom) yFrom.addEventListener('change', onYearSelectChange);
+  if (yTo)   yTo.addEventListener('change',   onYearSelectChange);
+
+
   const { skipExtent = false } = opts;
   const where = buildWhere();
 
@@ -1310,38 +1550,9 @@ async function applyFilters(opts = {}) {
 
   await updateEventTypeCountsServer(where);
 }
-    async function populateOneDistinct(fieldName, selectId) {
-      if (!fieldName) return;
-      const q = await featureLayer.queryFeatures({
-        where: "1=1",
-        outFields: [fieldName],
-        returnGeometry: false,
-        returnDistinctValues: true,
-        orderByFields: [fieldName]
-      });
-      const select = document.getElementById(selectId);
-      if (!select) return;
-      while (select.options.length > 1) select.remove(1);
-      q.features.map(f => f.attributes[fieldName])
-        .filter(v => v!=null && v!=="null" && v!=="undefined")
-        .forEach(v => {
-          const opt = document.createElement('option');
-          opt.value = v; opt.textContent = v;
-          select.appendChild(opt);
-        });
-    }
 
-    async function populateFiltersServer() {
-      FIELD.region = firstExisting(featureLayer, ["RegionName","REGION"]);
-      await Promise.all([
-        populateOneDistinct(FIELD.DistrictName, "DistrictName"),
-        populateOneDistinct(FIELD.region, "region"),
-        populateOneDistinct(FIELD.forest, "forest"),
-        populateOneDistinct(FIELD.gush,   "gush"),
-        populateOneDistinct(FIELD.parcel, "parcel"),
-        populateOneDistinct(FIELD.stand,  "stand"),
-      ]);
-    }
+
+
 
 async function initializeEventTypes() {
   if (!FIELD.type) {
@@ -1469,14 +1680,16 @@ async function initializeTimeSlider() {
       returnGeometry: false, 
       outStatistics: outStats 
     });
-    
     const a = res.features?.[0]?.attributes || {};
-    const minYear = a.minYear;
-    const maxYear = a.maxYear;
+    minYearGlobal = a.minYear ?? null;
+    maxYearGlobal = a.maxYear ?? null;
 
-    if (minYear && maxYear) {
-      minDate = new Date(minYear, 0, 1);
-      maxDate = new Date(maxYear, 11, 31); 
+    if (minYearGlobal && maxYearGlobal) {
+      // מלא את הרשימות העליונות
+      populateYearSelects(minYearGlobal, maxYearGlobal);
+
+      minDate = new Date(minYearGlobal, 0, 1);
+      maxDate = new Date(maxYearGlobal, 11, 31);
     }
   } catch (e) {
     console.warn("year stats failed", e);
@@ -1512,16 +1725,24 @@ async function initializeTimeSlider() {
     datesEl.textContent = `${minDate.getFullYear()} - ${maxDate.getFullYear()}`;
   }
 
-  timeSlider.watch("timeExtent", (value) => {
-    currentTimeExtent = value;
-    const datesEl = document.getElementById('timeSliderDates');
-    if (datesEl) {
-      datesEl.textContent = `${value.start.getFullYear()} - ${value.end.getFullYear()}`;
-    }
-    
-    applyFilters({ skipExtent: true });
-  });
-}
+timeSlider.watch("timeExtent", (value) => {
+  currentTimeExtent = value;
+  const datesEl = document.getElementById('timeSliderDates');
+  if (datesEl) {
+    datesEl.textContent = `${value.start.getFullYear()} - ${value.end.getFullYear()}`;
+  }
+
+  const yFrom = document.getElementById('yearFrom');
+  const yTo   = document.getElementById('yearTo');
+  if (yFrom && yTo) {
+    const sy = value.start.getFullYear();
+    const ey = value.end.getFullYear();
+    yFrom.value = (minYearGlobal != null && sy === Number(minYearGlobal)) ? "" : String(sy);
+    yTo.value   = (maxYearGlobal != null && ey === Number(maxYearGlobal)) ? "" : String(ey);
+  }
+
+  applyFilters({ skipExtent: true });
+})};
 
 
 
