@@ -12,8 +12,25 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
             background: #f5f5f5;
             overflow-x: hidden;
+            position: relative;
         }
-
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('LOGO.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            opacity: 0.35;
+            z-index: -1;
+            pointer-events: none;
+        }
+        
         .header {
             background: white;
             padding: 15px 20px;
@@ -25,26 +42,25 @@
             position: relative;
             z-index: 10;
         }
-
-
+        
         .logo svg {
             width: 50px;
             height: 50px;
         }
-
-                .logo img{
+        
+        .logo img{
             height:48px;
             width:auto;
             border-radius:8px;
             box-shadow:0 2px 8px rgba(0,0,0,.08);
         }
-
+        
         .title {
             font-size: 24px;
             font-weight: bold;
             color: #2d6a4f;
         }
-
+        
         .date-filters {
             display: flex;
             gap: 15px;
@@ -52,19 +68,19 @@
             flex-wrap: wrap;
             align-items: center;
         }
-
+        
         .date-group {
             display: flex;
             flex-direction: column;
             gap: 5px;
         }
-
+        
         .date-group label {
             font-size: 12px;
             color: #666;
             font-weight: 500;
         }
-
+        
         .date-group select {
             padding: 8px 12px;
             border: 1px solid #ddd;
@@ -75,17 +91,17 @@
             cursor: pointer;
             transition: all 0.3s ease;
         }
-
+        
         .date-group select:hover {
             border-color: #40916c;
         }
-
+        
         .date-group select:focus {
             outline: none;
             border-color: #40916c;
             box-shadow: 0 0 0 3px rgba(64, 145, 108, 0.1);
         }
-
+        
         .event-types {
             background: white;
             padding: 20px;
@@ -96,7 +112,7 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
             position: relative;
         }
-
+        
         .event-type-card {
             min-width: 150px;
             padding: 15px 20px;
@@ -108,28 +124,28 @@
             text-align: center;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-
+        
         .event-type-card:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 10px rgba(0,0,0,0.15);
         }
-
+        
         .event-type-card.active {
             background: #2d6a4f;
             transform: scale(1.05);
         }
-
+        
         .event-count {
             font-size: 28px;
             font-weight: bold;
             margin-bottom: 5px;
         }
-
+        
         .event-type-name {
             font-size: 14px;
             opacity: 0.9;
         }
-
+        
         .scroll-button {
             background: #f0f0f0;
             border: none;
@@ -144,17 +160,98 @@
             transition: all 0.3s ease;
             flex-shrink: 0;
         }
-
+        
         .scroll-button:hover {
             background: #e0e0e0;
         }
+        
+        .content-wrapper {
+            direction: ltr;
 
-        .map-container {
-            height: calc(100vh - 340px);
+            display: flex;
+            height: calc(100vh - 270px);
             position: relative;
+            gap: 0;
+        }
+        
+        .resize-divider {
+            width: 40px;
+            background: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.3s ease;
+        }
+        
+        .resize-divider:hover {
+            background: #e0e0e0;
+        }
+        
+        .resize-button {
+            background: #2d6a4f;
+            color: white;
+            border: none;
+            width: 30px;
+            height: 60px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .resize-button:hover {
+            background: #1f4d36;
+            transform: scaleY(1.1);
         }
 
-        /* Legend and Layer Control Styles */
+        .resize-divider { width: 48px; }
+        .resize-stack { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+        .resize-button { width: 36px; height: 36px; border-radius: 8px; }
+
+        .map-section {
+            flex: 2;
+            position: relative;
+            transition: flex 0.5s ease;
+        }
+        
+        .map-section.expanded {
+            flex: 1;
+        }
+        
+        .map-section.collapsed {
+            flex: 0;
+            display: none;
+        }
+        
+        .map-container {
+            height: 100%;
+            position: relative;
+        }
+        
+        .table-section {
+            flex: 1;
+            background: white;
+            overflow-y: auto;
+            transition: flex 0.5s ease;
+            border-right: none; 
+            border-left: 1px solid #ddd;
+        }
+        
+        .table-section.expanded {
+            flex: 1;
+        }
+        
+        .table-section.collapsed {
+            flex: 0;
+            display: none;
+        }
+        
         .legend-control {
             position: absolute;
             top: 15px;
@@ -166,7 +263,7 @@
             min-width: 250px;
             overflow: hidden;
         }
-
+        
         .legend-header {
             background: #2d6a4f;
             color: white;
@@ -177,34 +274,34 @@
             justify-content: space-between;
             align-items: center;
         }
-
+        
         .legend-toggle {
             font-size: 20px;
             transition: transform 0.3s ease;
         }
-
+        
         .legend-toggle.collapsed {
             transform: rotate(180deg);
         }
-
+        
         .legend-content {
             padding: 15px;
             max-height: 400px;
             overflow-y: auto;
             transition: max-height 0.3s ease;
         }
-
+        
         .legend-content.collapsed {
             max-height: 0;
             padding: 0 15px;
         }
-
+        
         .layer-control {
             margin-bottom: 20px;
             padding-bottom: 15px;
             border-bottom: 1px solid #e0e0e0;
         }
-
+        
         .layer-toggle {
             display: flex;
             align-items: center;
@@ -212,36 +309,36 @@
             margin-bottom: 10px;
             cursor: pointer;
         }
-
+        
         .layer-toggle input[type="checkbox"] {
             width: 18px;
             height: 18px;
             cursor: pointer;
         }
-
+        
         .layer-toggle label {
             cursor: pointer;
             font-weight: 500;
             color: #333;
         }
-
+        
         .legend-section {
             margin-bottom: 15px;
         }
-
+        
         .legend-section h4 {
             margin: 0 0 10px 0;
             font-size: 14px;
             color: #666;
         }
-
+        
         .legend-item {
             display: flex;
             align-items: center;
             gap: 10px;
             margin-bottom: 8px;
         }
-
+        
         .legend-symbol {
             width: 30px;
             height: 30px;
@@ -249,7 +346,7 @@
             border: 2px solid white;
             box-shadow: 0 1px 3px rgba(0,0,0,0.2);
         }
-
+        
         .legend-symbol.forest {
             width: 30px;
             height: 20px;
@@ -257,47 +354,37 @@
             background: rgba(50, 150, 50, 0.3);
             border: 2px solid rgba(0, 100, 0, 0.8);
         }
-
+        
         .legend-label {
             font-size: 13px;
             color: #555;
         }
-
+        
+        /* Info panel styles */
         .info-panel {
-            position: fixed;
-            right: 30px;
-            top: 200px;
-            bottom: 150px;          
-            background: #fff;
-            color: #333;
-            padding: 15px;         
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-            max-width: 650px;
-            max-height: 950px;
-            overflow-y: auto;
-            z-index: 998;
-            display: none;
-        }
+            direction: rtl;
 
+            padding: 20px;
+            height: 100%;
+            overflow-y: auto;
+        }
+        
         .info-panel h3 {
-            margin-bottom: 10px;    
-            font-size: 20px;       
+            margin: 0 0 15px 0;
+            font-size: 20px;
             font-weight: 600;
             color: #1b4332;
         }
-
+        
         .summary-info {
             background: #f8f9fa;
-            padding: 6px 10px;      
+            padding: 10px 15px;
             border-radius: 8px;
-            margin-bottom: 8px;     
+            margin-bottom: 15px;
             font-size: 14px;
             color: #495057;
-            line-height: 1.4;       
+            line-height: 1.6;
         }
-
-        
         
         .info-table {
             width: 100%;
@@ -305,41 +392,27 @@
             font-size: 14px;
         }
         
-        .info-table thead {
-            display: table;     
-            width: 100%;
-        }
-        
         .info-table th {
-            padding: 6px 8px;       
+            padding: 10px;
             text-align: right;
             font-weight: 600;
             color: #495057;
+            background: #f8f9fa;
             border-bottom: 2px solid #dee2e6;
-        }
-        
-        .info-table tbody {
-            max-height: 600px;     
-            overflow-y: auto;
-            display: block;
-        }
-        
-        .info-table thead,
-        .info-table tbody tr {
-            display: table;
-            width: 100%;
-            table-layout: fixed;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
         
         .info-table td {
-            padding: 6px 8px;       
+            padding: 10px;
             border-bottom: 1px solid #e9ecef;
         }
         
         .info-table tr:hover {
-            background: #f8f9fa;
+            background: #f0f8f4;
         }
-
+        
         .clickable-row {
             cursor: pointer;
             transition: background 0.2s ease;
@@ -348,12 +421,43 @@
         .clickable-row:hover {
             background: #e8f5e9 !important;
         }
-
+        
         .highlight-number {
             font-weight: bold;
             color: #2d6a4f;
         }
-
+        
+        .time-slider-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 15px 20px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .time-slider-label {
+            font-weight: 600;
+            color: #2d6a4f;
+            min-width: 100px;
+        }
+        
+        .time-slider-dates {
+            font-size: 14px;
+            color: #666;
+            min-width: 200px;
+            text-align: center;
+        }
+        
+        .esri-time-slider {
+            flex: 1;
+        }
+        
         .loading {
             position: fixed;
             top: 50%;
@@ -369,7 +473,7 @@
             align-items: center;
             gap: 15px;
         }
-
+        
         .loading::before {
             content: '';
             width: 30px;
@@ -379,11 +483,11 @@
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
-
+        
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
-
+        
         .error-message {
             position: fixed;
             top: 20px;
@@ -397,7 +501,7 @@
             z-index: 1000;
             animation: slideIn 0.3s ease;
         }
-
+        
         @keyframes slideIn {
             from {
                 transform: translateX(100%);
@@ -407,45 +511,6 @@
                 transform: translateX(0);
                 opacity: 1;
             }
-        }
-
-        .time-slider-container {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: white;
-            padding: 15px 20px;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-            z-index: 50;
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .time-slider-label {
-            font-weight: 600;
-            color: #2d6a4f;
-            min-width: 100px;
-        }
-
-        .time-slider-dates {
-            font-size: 14px;
-            color: #666;
-            min-width: 200px;
-            text-align: center;
-        }
-
-        .esri-time-slider {
-            flex: 1;
-        }
-
-        .map-container {
-            height: calc(100vh - 400px);
-        }
-
-        .info-panel {
-            bottom: 150px;
         }
     </style>
 </head>
@@ -457,7 +522,17 @@
             </svg>
             <span class="title">ספר יער</span>
         </div>
+
+
         <div class="date-filters">
+            <div class="date-group">
+                <label>מרחב</label>
+                <select id="DistrictName">
+                    <option value="">הכל</option>
+                </select>
+            </div>
+
+
             <div class="date-group">
                 <label>אזור</label>
                 <select id="region">
@@ -489,176 +564,181 @@
                 </select>
             </div>
         </div>
-
     </div>
-
+    
     <div class="event-types">
         <button class="scroll-button" onclick="scrollEvents(-1)">‹</button>
         <div id="eventTypesContainer" style="display: flex; gap: 15px; overflow: hidden; scroll-behavior: smooth;">
-            <!-- Event type cards will be populated here -->
+            <!-- Event type cards -->
         </div>
         <button class="scroll-button" onclick="scrollEvents(1)">›</button>
     </div>
-
-    <div id="mapView" class="map-container">
-        <div class="legend-control">
-            <div class="legend-header" onclick="toggleLegend()">
-                <span>מקרא ושכבות</span>
-                <span class="legend-toggle" id="legendToggle">▼</span>
-            </div>
-            <div class="legend-content" id="legendContent">
-                <div class="layer-control">
-                    <div class="layer-toggle">
-                        <input type="checkbox" id="forestLayerToggle" checked>
-                        <label for="forestLayerToggle">שכבת יערות</label>
+    
+    <div class="content-wrapper">
+        <div class="map-section" id="mapSection">
+            <div id="mapView" class="map-container">
+                <div class="legend-control">
+                    <div class="legend-header" onclick="toggleLegend()">
+                        <span>מקרא ושכבות</span>
+                        <span class="legend-toggle" id="legendToggle">▼</span>
                     </div>
-                    <div class="layer-toggle">
-                        <input type="checkbox" id="eventsLayerToggle" checked>
-                        <label for="eventsLayerToggle">שכבת אירועים</label>
+                    <div class="legend-content" id="legendContent">
+                        <div class="layer-control">
+                            <div class="layer-toggle">
+                                <input type="checkbox" id="forestLayerToggle" checked>
+                                <label for="forestLayerToggle">שכבת יערות</label>
+                            </div>
+                            <div class="layer-toggle">
+                                <input type="checkbox" id="eventsLayerToggle" checked>
+                                <label for="eventsLayerToggle">שכבת אירועים</label>
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                            <div class="legend-section">
+                                <h4>סוגי כיסוי יער</h4>
+                                <div class="legend-item">
+                                    <div class="legend-symbol" style="background: rgba(0, 77, 0, 0.4); border: 2px solid rgba(0, 51, 0, 0.8);"></div>
+                                    <span class="legend-label">מעורב עצי מחט</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-symbol" style="background: rgba(0, 102, 0, 0.4); border: 2px solid rgba(0, 77, 0, 0.8);"></div>
+                                    <span class="legend-label">אורן ברוטיה</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-symbol" style="background: rgba(0, 128, 0, 0.4); border: 2px solid rgba(0, 102, 0, 0.8);"></div>
+                                    <span class="legend-label">אורן ירושלים</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-symbol" style="background: rgba(0, 153, 0, 0.4); border: 2px solid rgba(0, 128, 0, 0.8);"></div>
+                                    <span class="legend-label">אורן גלעין</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-symbol" style="background: rgba(46, 125, 50, 0.4); border: 2px solid rgba(27, 94, 32, 0.8);"></div>
+                                    <span class="legend-label">ברוש מצוי</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-symbol" style="background: rgba(34, 139, 34, 0.4); border: 2px solid rgba(0, 100, 0, 0.8);"></div>
+                                    <span class="legend-label">רחבי עלים</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-symbol" style="background: rgba(144, 238, 144, 0.4); border: 2px solid rgba(0, 128, 0, 0.8);"></div>
+                                    <span class="legend-label">מעורב רחבי עלים</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-symbol" style="background: rgba(60, 179, 113, 0.4); border: 2px solid rgba(46, 125, 50, 0.8);"></div>
+                                    <span class="legend-label">מעורב עצי מחט - רחבי עלים</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-symbol" style="background: rgba(107, 142, 35, 0.4); border: 2px solid rgba(85, 107, 47, 0.8);"></div>
+                                    <span class="legend-label">אקליפטוס גומפוצפלה</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-symbol" style="background: rgba(143, 188, 143, 0.4); border: 2px solid rgba(107, 142, 107, 0.8);"></div>
+                                    <span class="legend-label">אקליפטוס המקור</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-symbol" style="background: rgba(128, 128, 0, 0.4); border: 2px solid rgba(107, 107, 0, 0.8);"></div>
+                                    <span class="legend-label">זיתים</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-symbol" style="background: rgba(85, 107, 47, 0.4); border: 2px solid rgba(62, 77, 36, 0.8);"></div>
+                                    <span class="legend-label">חרובים</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-symbol" style="background: rgba(255, 192, 203, 0.4); border: 2px solid rgba(219, 112, 147, 0.8);"></div>
+                                    <span class="legend-label">עצי פרי</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-symbol" style="background: rgba(154, 205, 50, 0.4); border: 2px solid rgba(107, 142, 35, 0.8);"></div>
+                                    <span class="legend-label">חורש עד אציל - אלון חולע</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-symbol" style="background: rgba(173, 255, 47, 0.4); border: 2px solid rgba(124, 179, 66, 0.8);"></div>
+                                    <span class="legend-label">עצי חורש ארץ ישראלי</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-symbol" style="background: rgba(189, 183, 107, 0.4); border: 2px solid rgba(139, 134, 78, 0.8);"></div>
+                                    <span class="legend-label">חורש טבעי דליל</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-symbol" style="background: rgba(188, 143, 143, 0.4); border: 2px solid rgba(139, 90, 90, 0.8);"></div>
+                                    <span class="legend-label">בני שיח עבותיים</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-symbol" style="background: rgba(192, 192, 192, 0.3); border: 2px solid rgba(128, 128, 128, 0.8);"></div>
+                                    <span class="legend-label">אחר</span>
+                                </div>
+                            </div>
+                            <div class="legend-section">
+                                <h4>צפיפות אירועים</h4>
+                                <div class="legend-item">
+                                    <div class="legend-symbol" style="background: #e8fcd4; width: 20px; height: 20px; border-radius: 50%;"></div>
+                                    <span class="legend-label">2 אירועים</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-symbol" style="background: #b7f293; width: 26px; height: 26px; border-radius: 50%;"></div>
+                                    <span class="legend-label">10 אירועים</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-symbol" style="background: #74cf75; width: 34px; height: 34px; border-radius: 50%;"></div>
+                                    <span class="legend-label">50 אירועים</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-symbol" style="background: #39a96b; width: 44px; height: 44px; border-radius: 50%;"></div>
+                                    <span class="legend-label">200 אירועים</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-symbol" style="background: #1f7c4c; width: 54px; height: 54px; border-radius: 50%;"></div>
+                                    <span class="legend-label">1000+ אירועים</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-
-
-
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-        <!-- Right column: Forest types -->
-        <div class="legend-section">
-            <h4>סוגי כיסוי יער</h4>
-            <div class="legend-item">
-                <div class="legend-symbol" style="background: rgba(0, 77, 0, 0.4); border: 2px solid rgba(0, 51, 0, 0.8);"></div>
-                <span class="legend-label">מעורב עצי מחט</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-symbol" style="background: rgba(0, 102, 0, 0.4); border: 2px solid rgba(0, 77, 0, 0.8);"></div>
-                <span class="legend-label">אורן ברוטיה</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-symbol" style="background: rgba(0, 128, 0, 0.4); border: 2px solid rgba(0, 102, 0, 0.8);"></div>
-                <span class="legend-label">אורן ירושלים</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-symbol" style="background: rgba(0, 153, 0, 0.4); border: 2px solid rgba(0, 128, 0, 0.8);"></div>
-                <span class="legend-label">אורן גלעין</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-symbol" style="background: rgba(46, 125, 50, 0.4); border: 2px solid rgba(27, 94, 32, 0.8);"></div>
-                <span class="legend-label">ברוש מצוי</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-symbol" style="background: rgba(34, 139, 34, 0.4); border: 2px solid rgba(0, 100, 0, 0.8);"></div>
-                <span class="legend-label">רחבי עלים</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-symbol" style="background: rgba(144, 238, 144, 0.4); border: 2px solid rgba(0, 128, 0, 0.8);"></div>
-                <span class="legend-label">מעורב רחבי עלים</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-symbol" style="background: rgba(60, 179, 113, 0.4); border: 2px solid rgba(46, 125, 50, 0.8);"></div>
-                <span class="legend-label">מעורב עצי מחט - רחבי עלים</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-symbol" style="background: rgba(107, 142, 35, 0.4); border: 2px solid rgba(85, 107, 47, 0.8);"></div>
-                <span class="legend-label">אקליפטוס גומפוצפלה</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-symbol" style="background: rgba(143, 188, 143, 0.4); border: 2px solid rgba(107, 142, 107, 0.8);"></div>
-                <span class="legend-label">אקליפטוס המקור</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-symbol" style="background: rgba(128, 128, 0, 0.4); border: 2px solid rgba(107, 107, 0, 0.8);"></div>
-                <span class="legend-label">זיתים</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-symbol" style="background: rgba(85, 107, 47, 0.4); border: 2px solid rgba(62, 77, 36, 0.8);"></div>
-                <span class="legend-label">חרובים</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-symbol" style="background: rgba(255, 192, 203, 0.4); border: 2px solid rgba(219, 112, 147, 0.8);"></div>
-                <span class="legend-label">עצי פרי</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-symbol" style="background: rgba(154, 205, 50, 0.4); border: 2px solid rgba(107, 142, 35, 0.8);"></div>
-                <span class="legend-label">חורש עד אציל - אלון חולע</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-symbol" style="background: rgba(173, 255, 47, 0.4); border: 2px solid rgba(124, 179, 66, 0.8);"></div>
-                <span class="legend-label">עצי חורש ארץ ישראלי</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-symbol" style="background: rgba(189, 183, 107, 0.4); border: 2px solid rgba(139, 134, 78, 0.8);"></div>
-                <span class="legend-label">חורש טבעי דליל</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-symbol" style="background: rgba(188, 143, 143, 0.4); border: 2px solid rgba(139, 90, 90, 0.8);"></div>
-                <span class="legend-label">בני שיח עבותיים</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-symbol" style="background: rgba(192, 192, 192, 0.3); border: 2px solid rgba(128, 128, 128, 0.8);"></div>
-                <span class="legend-label">אחר</span>
             </div>
         </div>
-
-        <!-- Left column: Event density -->
-        <div class="legend-section">
-            <h4>צפיפות אירועים</h4>
-            <div class="legend-item">
-                <div class="legend-symbol" style="background: #e8fcd4; width: 20px; height: 20px; border-radius: 50%;"></div>
-                <span class="legend-label">2 אירועים</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-symbol" style="background: #b7f293; width: 26px; height: 26px; border-radius: 50%;"></div>
-                <span class="legend-label">10 אירועים</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-symbol" style="background: #74cf75; width: 34px; height: 34px; border-radius: 50%;"></div>
-                <span class="legend-label">50 אירועים</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-symbol" style="background: #39a96b; width: 44px; height: 44px; border-radius: 50%;"></div>
-                <span class="legend-label">200 אירועים</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-symbol" style="background: #1f7c4c; width: 54px; height: 54px; border-radius: 50%;"></div>
-                <span class="legend-label">1000+ אירועים</span>
-            </div>
-        </div>
-    </div>
+        
+<div class="resize-divider">
+  <div class="resize-stack">
+    <button class="resize-button" title="Map full (>)" onclick="setLayout(1)">&gt;</button>
+    <button class="resize-button" title="Split (&lt;&gt;)" onclick="setLayout(0)">&lt;&gt;</button>
+    <button class="resize-button" title="Table full (&lt;)" onclick="setLayout(2)">&lt;</button>
+  </div>
 </div>
-
-
+        
+        <div class="table-section" id="tableSection">
+            <div id="infoPanel" class="info-panel">
+                <h3 id="infoPanelTitle">טיפולים ביער</h3>
+                <div id="summaryInfo" class="summary-info"></div>
+                <table class="info-table">
+                    <thead>
+                        <tr>
+                            <th>עומד</th>
+                            <th>חלקה</th>
+                            <th>גוש</th>
+                            <th>יער</th>
+                            <th>שטח (דונם)</th>
+                            <th>תאריך</th>
+                            <th>אירוע</th>
+                        </tr>
+                    </thead>
+                    <tbody id="infoTableBody">
+                        <!-- Table rows will be populated here -->
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
-
+    
     <div class="time-slider-container">
         <div class="time-slider-label">סינון לפי תאריך:</div>
         <div id="timeSlider"></div>
         <div class="time-slider-dates" id="timeSliderDates"></div>
     </div>
-
-    <div id="infoPanel" class="info-panel">
-        <h3 id="infoPanelTitle">טיפולים ביער</h3>
-        <div id="summaryInfo" class="summary-info"></div>
-        <table class="info-table">
-            <thead>
-                <tr>
-                    <th>עומד</th>
-                    <th>חלקה</th>
-                    <th>גוש</th>
-                    <th>יער</th>
-                    <th>שטח (דונם)</th>
-                    <th>תאריך</th>
-                    <th>אירוע</th>
-                </tr>
-            </thead>
-            <tbody id="infoTableBody">
-                <!-- Table rows will be populated here -->
-            </tbody>
-        </table>
-    </div>
-
+    
     <div class="loading" id="loading">טוען נתונים...</div>
     <div class="error-message" id="errorMessage"></div>
+
 
     <script src="https://js.arcgis.com/4.28/"></script>
 
@@ -743,6 +823,7 @@ function formatDateFull(date) {
 }
     function getActiveFilters() {
       return {
+        DistrictName: document.getElementById('DistrictName')?.value || "",
         region: document.getElementById('region')?.value || "",
         forest: document.getElementById('forest')?.value || "",
         gush:   document.getElementById('gush')?.value || "",
@@ -799,7 +880,6 @@ function formatDateFull(date) {
     });
 
 
-    // 0d6e6c8ba1c1497aa361342dc37e92b7
     featureForest = new FeatureLayer({
       portalItem: { id: "ee2a901cd3d44e79bfb9bd718818f5ab" },
       layerId: 0,
@@ -807,7 +887,6 @@ function formatDateFull(date) {
       definitionExpression: "UPDATE_CODE <> 'D' OR UPDATE_CODE IS NULL",
       labelsVisible: true,
       labelingInfo: [{
-        // labelExpressionInfo: { expression: "Text($feature.HELKA) + ' / ' + Text($feature.STAND_NO)" },
         symbol: {
           type: "text",
           color: [255,255,255,0.9],
@@ -1068,6 +1147,52 @@ uniqueValueInfos: [
     });
 
 
+
+let layoutState = 0; // 0 = split (2/3 map, 1/3 table), 1 = map only, 2 = table only
+
+window.setLayout = function (state) {
+  layoutState = state;
+
+  const mapSection   = document.getElementById('mapSection');
+  const tableSection = document.getElementById('tableSection');
+
+  if (!mapSection || !tableSection) return;
+
+  // reset classes
+  mapSection.classList.remove('collapsed', 'expanded');
+  tableSection.classList.remove('collapsed', 'expanded');
+
+  if (state === 0) {
+    // Split view — keep your default flex: map(2) / table(1)
+  } else if (state === 1) {
+    // Map only
+    mapSection.classList.add('expanded');
+    tableSection.classList.add('collapsed');
+  } else if (state === 2) {
+    // Table only
+    mapSection.classList.add('collapsed');
+    tableSection.classList.add('expanded');
+  }
+
+  // Make ArcGIS view recalc after layout change
+  try {
+    view.resize();
+    setTimeout(() => view.resize(), 0);
+  } catch (e) { /* no-op */ }
+};
+
+window.addEventListener('DOMContentLoaded', () => {
+  const btnExpandMap   = document.getElementById('btnExpandMap');
+  const btnBoth        = document.getElementById('btnBoth');
+  const btnExpandTable = document.getElementById('btnExpandTable');
+
+  if (btnExpandMap)   btnExpandMap.onclick   = () => setLayout(1);
+  if (btnBoth)        btnBoth.onclick        = () => setLayout(0);
+  if (btnExpandTable) btnExpandTable.onclick = () => setLayout(2);
+});
+
+    
+
 function resolveFieldsAfterLoad() {
   eventTypeField = (function pickEventTypeField(layer) {
     const candidates = ["EventType","EVENTTYPE","EVENT_TYPE","ActivityType","WorkType","TYPE"];
@@ -1077,6 +1202,7 @@ function resolveFieldsAfterLoad() {
   })(featureLayer);
 
   FIELD = {
+    DistrictName: firstExisting(featureLayer, ["DistrictName","DistrictName"]),
     forest: firstExisting(featureLayer, ["ForestName","ForestName"]),
     gush:   firstExisting(featureLayer, ["ForestGushName","GUSH"]),
     parcel: firstExisting(featureLayer, ["HELKA","Parcel"]),
@@ -1102,6 +1228,9 @@ function buildWhere() {
     parts.push(`${activeEventType.field} = ${sqlString(activeEventType.value)}`);
   }
 
+  console.log("Active filters:", f);
+
+  if (FIELD.DistrictName && f.DistrictName) parts.push(`${FIELD.DistrictName} = ${sqlString(f.DistrictName)}`);
   if (FIELD.region && f.region) parts.push(`${FIELD.region} = ${sqlString(f.region)}`);
   if (FIELD.forest && f.forest) parts.push(`${FIELD.forest} = ${sqlString(f.forest)}`);
   if (FIELD.gush   && f.gush)   parts.push(`${FIELD.gush}   = ${sqlString(f.gush)}`);
@@ -1144,25 +1273,6 @@ async function refreshForestVisibility(where) {
     .map(f => f.attributes[FIELD.forest])
     .filter(v => v != null && v !== "" && v !== "null" && v !== "undefined");
 
-  // if (!names.length) {
-  //   // No forests in current result => hide polygon layer
-  //   featureForest.visible = false;
-  //   if (chk) chk.checked = false;
-  //   featureForest.definitionExpression = baseForestExpr;
-  //   return;
-  // }
-
-  // There ARE forests in the result: show only those polygons
-  // const expr = `${baseForestExpr} AND ${FIELD.forest} IN (${sqlList(names)})`;
-  // featureForest.definitionExpression = expr;
-
-  // // Respect manual OFF by the user; otherwise show it
-  // if (forestLayerManuallyToggled && chk && chk.checked === false) {
-  //   featureForest.visible = false;
-  // } else {
-  //   featureForest.visible = true;
-  //   if (chk) chk.checked = true;
-  // }
 }
 
 
@@ -1172,10 +1282,6 @@ async function applyFilters(opts = {}) {
 
   featureLayer.definitionExpression = where;
 
-  // try {
-  // } catch (e) {
-  //   console.warn("refreshForestVisibility failed", e);
-  // }
 
   if (!skipExtent) {
     try {
@@ -1192,7 +1298,7 @@ async function applyFilters(opts = {}) {
     }
   }
 
-  const outFields = ["OBJECTID", FIELD.forest, FIELD.gush, FIELD.parcel, FIELD.stand, FIELD.area, FIELD.year, FIELD.type]
+  const outFields = ["OBJECTID",FIELD.DistrictName, FIELD.region, FIELD.forest, FIELD.gush, FIELD.parcel, FIELD.stand, FIELD.area, FIELD.year, FIELD.type]
     .filter(Boolean);
   const result = await featureLayer.queryFeatures({ where, returnGeometry: false, outFields });
 
@@ -1228,6 +1334,7 @@ async function applyFilters(opts = {}) {
     async function populateFiltersServer() {
       FIELD.region = firstExisting(featureLayer, ["RegionName","REGION"]);
       await Promise.all([
+        populateOneDistinct(FIELD.DistrictName, "DistrictName"),
         populateOneDistinct(FIELD.region, "region"),
         populateOneDistinct(FIELD.forest, "forest"),
         populateOneDistinct(FIELD.gush,   "gush"),
@@ -1527,7 +1634,7 @@ function updateInfoTable(features, FIELD) {
 
     let searchWidget; 
 
-    ['region','forest','gush','parcel','stand'].forEach(id => {
+    ['DistrictName','region','forest','gush','parcel','stand'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.addEventListener('change', () => { forestLayerManuallyToggled = false; debouncedApply(); });
     });
