@@ -528,6 +528,189 @@
 .year-range .date-group select {
   min-width: 110px;
 }
+
+
+
+
+
+.network-search-group {
+    padding-inline-start: 16px;
+    border-inline-start: 1px solid #e6e6e6;
+    margin-inline-start: 16px;
+}
+
+.network-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 2000;
+    animation: fadeIn 0.3s ease;
+}
+
+.network-modal-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 85%;
+    height: 85%;
+    max-width: 1200px;
+    max-height: 800px;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fffe 100%);
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 100px rgba(45, 106, 79, 0.1);
+    overflow: hidden;
+    animation: slideUp 0.4s ease;
+}
+
+.network-modal-header {
+    background: linear-gradient(135deg, #2d6a4f 0%, #40916c 100%);
+    color: white;
+    padding: 20px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.network-modal-header h2 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.network-close-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    font-size: 32px;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+.network-close-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(90deg);
+}
+
+#networkGraph {
+    height: calc(100% - 140px);
+    width: 100%;
+    position: relative;
+    background: radial-gradient(circle at center, #fafffe 0%, #f0f8f4 100%);
+}
+
+.network-info {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 15px 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+.network-legend h4 {
+    margin: 0 0 10px 0;
+    color: #2d6a4f;
+    font-size: 14px;
+}
+
+.legend-items {
+    display: flex;
+    gap: 20px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #495057;
+}
+
+.dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.dot.from-node {
+    background: linear-gradient(135deg, #52b788, #74c69d);
+    box-shadow: 0 2px 4px rgba(82, 183, 136, 0.3);
+}
+
+.dot.to-node {
+    background: linear-gradient(135deg, #40916c, #52b788);
+    box-shadow: 0 2px 4px rgba(64, 145, 108, 0.3);
+}
+
+.dot.same-node {
+    background: linear-gradient(135deg, #95d5b2, #b7e4c7);
+    box-shadow: 0 2px 4px rgba(149, 213, 178, 0.3);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translate(-50%, -40%);
+        opacity: 0;
+    }
+    to {
+        transform: translate(-50%, -50%);
+        opacity: 1;
+    }
+}
+
+.vis-network {
+    border: none !important;
+}
+
+.vis-tooltip {
+    position: absolute;
+    visibility: hidden;
+    padding: 10px 15px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    font-size: 13px;
+    color: #333;
+    backdrop-filter: blur(10px);
+    max-width: 250px;
+    z-index: 2001;
+}
+
+#fhpSearchBtn:hover:not(:disabled) {
+    background: #1f4d36 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(45, 106, 79, 0.2);
+}
+
+#fhpSearchBtn:disabled {
+    background: #9e9e9e !important;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+
     </style>
 </head>
 <body>
@@ -592,9 +775,34 @@
       <option value="">עד הסוף</option>
     </select>
   </div>
+  
 </div>
+
+        </div>
+<div class="network-search-group">
+    <div class="date-group">
+        <label>חיפוש רשת F_H_P</label>
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <input type="text" id="fhpSearch" placeholder="הכנס מספר F_H_P" 
+                   list="fhpSuggestions"
+                   style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; 
+                          background: white; font-size: 14px; min-width: 150px;">
+            <datalist id="fhpSuggestions"></datalist>
+            <button id="fhpSearchBtn" 
+                    style="padding: 8px 16px; background: #2d6a4f; color: white; 
+                           border: none; border-radius: 8px; cursor: pointer; 
+                           font-weight: 500; transition: all 0.3s ease;">
+                <span id="searchBtnText"> הפעל</span>
+            </button>
         </div>
     </div>
+</div>
+
+
+
+    </div>
+
+    
     
     <div class="event-types">
         <button class="scroll-button" onclick="scrollEvents(-1)">‹</button>
@@ -770,11 +978,439 @@
     <div class="error-message" id="errorMessage"></div>
 
 
+
+    <script src="https://unpkg.com/vis-network@latest/dist/vis-network.min.js"></script>
     <script src="https://js.arcgis.com/4.28/"></script>
 
 
+<!-- Add this modal HTML at the end of the body, before closing scripts -->
+<div id="networkModal" class="network-modal" style="display: none;">
+    <div class="network-modal-content">
+        <div class="network-modal-header">
+            <h2>רשת קשרים סוג כיסוי- F_H_P: <span id="fhpValue"></span></h2>
+            <button class="network-close-btn" onclick="closeNetworkModal()">&times;</button>
+        </div>
+        <div id="networkGraph"></div>
+        <div class="network-info">
+            <div class="network-legend">
+                <h4>מקרא:</h4>
+                <div class="legend-items">
+                    <span class="legend-item"><span class="dot from-node"></span>צומת מקור</span>
+                    <span class="legend-item"><span class="dot to-node"></span>צומת יעד</span>
+                    <span class="legend-item"><span class="dot same-node"></span>אותו צומת</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 <script>
+  
+
+
+
+let networkData = [];
+
+// Coverage type descriptions (add more as needed)
+const covTypeDescriptions = {
+    9900: "אחר",
+    2100: "אורן ירושלים",
+    2113: "אורן מעורב",
+    2900: "ברוש מצוי",
+    1991: "חורש טבעי",
+    2111: "אורן ברוטיה",
+    2112: "אורן גלעין",
+    3100: "ברוש מצוי",
+    4100: "רחבי עלים",
+    4200: "מעורב רחבי עלים",
+    5100: "מעורב עצי מחט - רחבי עלים",
+    6100: "אקליפטוס גומפוצפלה",
+    6200: "אקליפטוס המקור",
+    7100: "זיתים",
+    7200: "חרובים",
+    7300: "עצי פרי",
+    8100: "חורש עד אציל - אלון חולע",
+    8200: "עצי חורש ארץ ישראלי",
+    8300: "חורש טבעי דליל",
+    8400: "בני שיח עבותיים"
+};
+
+let network = null;
+
+// Load JSON data when page loads
+async function loadNetworkData() {
+    try {
+        const response = await fetch('networkx_edges.json');
+        if (!response.ok) {
+            throw new Error('Failed to load network data');
+        }
+        
+        // Check if response is JSON array or newline-delimited JSON
+        const text = await response.text();
+        
+        // Try to parse as regular JSON array first
+        try {
+            networkData = JSON.parse(text);
+        } catch {
+            // If not valid JSON array, try parsing as newline-delimited JSON
+            networkData = text.trim().split('\n')
+                .filter(line => line.trim())
+                .map(line => JSON.parse(line));
+        }
+        
+        console.log(`Loaded ${networkData.length} network records`);
+        
+        // Enable search functionality
+        const searchBtn = document.getElementById('fhpSearchBtn');
+        const searchInput = document.getElementById('fhpSearch');
+        
+        if (searchBtn) {
+            searchBtn.disabled = false;
+            searchInput.disabled = false;
+            searchInput.placeholder = `הכנס מספר F_H_P`;
+        }
+        
+    } catch (error) {
+        console.error('Error loading network data:', error);
+        alert('שגיאה בטעינת נתוני הרשת. אנא בדוק שהקובץ networkx_edges.json קיים באותה תיקייה.');
+        
+        // Disable search if data couldn't be loaded
+        const searchBtn = document.getElementById('fhpSearchBtn');
+        const searchInput = document.getElementById('fhpSearch');
+        
+        if (searchBtn) {
+            searchBtn.disabled = true;
+            searchInput.disabled = true;
+            searchInput.placeholder = 'נתוני רשת לא זמינים';
+        }
+    }
+}
+
+// Initialize search functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Load network data
+    loadNetworkData();
+    
+    const searchBtn = document.getElementById('fhpSearchBtn');
+    const searchInput = document.getElementById('fhpSearch');
+    
+    if (searchBtn) {
+        // Initially disable until data is loaded
+        searchBtn.disabled = true;
+        searchInput.disabled = true;
+        
+        searchBtn.addEventListener('click', searchNetwork);
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !searchInput.disabled) {
+                searchNetwork();
+            }
+        });
+    }
+});
+
+async function searchNetwork() {
+    const fhpValue = document.getElementById('fhpSearch').value.trim();
+    
+    if (!fhpValue) {
+        alert('אנא הכנס מספר F_H_P');
+        return;
+    }
+    
+    // Check if data is loaded
+    if (!networkData || networkData.length === 0) {
+        alert('נתוני הרשת עדיין נטענים. אנא נסה שוב.');
+        await loadNetworkData();
+        return;
+    }
+    
+    // Filter data for the specific F_H_P
+    const filteredData = networkData.filter(item => 
+        item.F_H_P && item.F_H_P.toString() === fhpValue
+    );
+    
+    if (filteredData.length === 0) {
+        // Try to find partial matches or suggest similar F_H_P values
+        const similarValues = [...new Set(networkData
+            .filter(item => item.F_H_P && item.F_H_P.toString().includes(fhpValue))
+            .map(item => item.F_H_P))]
+            .slice(0, 5);
+        
+        if (similarValues.length > 0) {
+            alert(`לא נמצאו נתונים עבור F_H_P: ${fhpValue}\n\nערכים דומים:\n${similarValues.join('\n')}`);
+        } else {
+            alert(`לא נמצאו נתונים עבור F_H_P: ${fhpValue}`);
+        }
+        return;
+    }
+    
+    // Show modal and create network
+    showNetworkModal(fhpValue, filteredData);
+}
+
+function showNetworkModal(fhpValue, data) {
+    const modal = document.getElementById('networkModal');
+    document.getElementById('fhpValue').textContent = fhpValue;
+    modal.style.display = 'block';
+    
+    // Create network visualization
+    setTimeout(() => {
+        createNetworkVisualization(data);
+    }, 100);
+}
+
+function closeNetworkModal() {
+    const modal = document.getElementById('networkModal');
+    modal.style.display = 'none';
+    
+    if (network) {
+        network.destroy();
+        network = null;
+    }
+}
+
+
+
+
+function createNetworkVisualization(data) {
+    const container = document.getElementById('networkGraph');
+
+    let areas = [];
+    data.forEach(it => {
+        if (isFinite(+it.NET_AREA_from)) areas.push(+it.NET_AREA_from);
+        if (isFinite(+it.NET_AREA_to))   areas.push(+it.NET_AREA_to);
+    });
+    const areaMin = areas.length ? Math.max(1, Math.min(...areas)) : 1;
+    const areaMax = areas.length ? Math.max(...areas) : 1;
+
+    const nodeMap = new Map();  
+    const covSeen = new Set();
+
+    function addNode(keyNum, year, cov, area, side) {
+        const id = `${keyNum}_${year}`;
+        if (nodeMap.has(id)) return id;
+
+        const covKey = normalizeCov(cov);
+        covSeen.add(covKey);
+        const label = `${keyNum}\n${year}\n${getCovTypeLabel(covKey)}`;
+
+        const value = scaleLinear(+area || areaMin, areaMin, areaMax, 12, 36);
+
+        nodeMap.set(id, {
+            id,
+            label,
+            title: `<div style="padding:6px;">
+                <strong>מספר מפתח:</strong> ${keyNum}<br>
+                <strong>שנה:</strong> ${year}<br>
+                <strong>סוג כיסוי:</strong> ${getCovTypeLabel(covKey)}<br>
+                <strong>שטח נטו:</strong> ${isFinite(+area) ? +area : "—"} דונם
+            </div>`,
+            value,
+            level: parseInt(year, 10) || undefined, // drives LR timeline
+            shape: 'dot',
+            color: {
+                background: getCovColor(covKey),
+                border: getCovColor(covKey),
+                highlight: { background: getCovColor(covKey), border: '#1b1b1b' }
+            },
+            font: { size: 12, face: 'Arial', color: '#1b1b1b' },
+            shadow: true
+        });
+        return id;
+    }
+
+    const edgeAgg = new Map(); 
+    data.forEach(item => {
+        const fromId = addNode(item.key_numbers_from, item.year_from, item.COV_TYPE_from, item.NET_AREA_from, 'from');
+        const toId   = addNode(item.key_numbers_to,   item.year_to,   item.COV_TYPE_to,   item.NET_AREA_to,   'to');
+
+        const k = `${fromId}|${toId}`;
+        if (!edgeAgg.has(k)) {
+            edgeAgg.set(k, {
+                from: fromId,
+                to: toId,
+                count: 0,
+                years: [],
+                covFrom: new Set(),
+                covTo: new Set()
+            });
+        }
+        const e = edgeAgg.get(k);
+        e.count += 1;
+        e.years.push(`${item.year_to}→${item.year_from}`);
+        e.covFrom.add(normalizeCov(item.COV_TYPE_from));
+        e.covTo.add(normalizeCov(item.COV_TYPE_to));
+    });
+
+    const nodes = new vis.DataSet(Array.from(nodeMap.values()));
+    const edges = new vis.DataSet(
+        Array.from(edgeAgg.values()).map(e => {
+            const label = e.count > 1 ? `x${e.count}` : e.years[0];
+            return {
+                from: e.from,
+                to: e.to,
+                label,
+                arrows: { to: { enabled: true, scaleFactor: 1.0 } },
+                width: Math.min(6, 2 + Math.log2(1 + e.count)), 
+                selectionWidth: 3,
+                hoverWidth: 3,
+                color: { opacity: 0.6 },
+                smooth: { type: 'cubicBezier', forceDirection: 'horizontal', roundness: 0.35 },
+                font: { size: 11, strokeWidth: 3, strokeColor: '#ffffff' }
+            };
+        })
+    );
+
+    const options = {
+        layout: {
+            hierarchical: {
+                enabled: true,
+                direction: 'LR',
+                sortMethod: 'directed',
+                levelSeparation: 160,
+                nodeSpacing: 140,
+                treeSpacing: 260,
+                shakeTowards: 'leaves',
+                blockShifting: true
+            },
+            improvedLayout: false 
+        },
+        physics: {
+            solver: 'hierarchicalRepulsion',
+            hierarchicalRepulsion: {
+                nodeDistance: 180,
+                springLength: 120,
+                springConstant: 0.01,
+                damping: 0.15,
+                avoidOverlap: 1
+            },
+            stabilization: { enabled: true, iterations: 500, updateInterval: 50, fit: true }
+        },
+        nodes: {
+            borderWidth: 2,
+            borderWidthSelected: 3
+        },
+        edges: {
+            smooth: true
+        },
+        interaction: {
+            hover: true,
+            tooltipDelay: 120,
+            navigationButtons: true,
+            keyboard: true,
+            zoomView: true,
+            dragNodes: true,
+            multiselect: true
+        }
+    };
+
+    const prog = document.createElement('div');
+    prog.style.cssText = `
+        position:absolute; top:8px; left:8px; background:#ffffffcc; padding:6px 8px;
+        border-radius:8px; font:12px/1.2 Arial; z-index:10;`;
+    prog.textContent = 'טוען פריסת רשת…';
+    container.style.position = 'relative';
+    container.appendChild(prog);
+
+    network = new vis.Network(container, { nodes, edges }, options);
+
+    network.once('stabilizationIterationsDone', () => {
+        network.fit({ animation: { duration: 800, easingFunction: 'easeInOutQuad' } });
+        prog.remove();
+    });
+
+    network.on('doubleClick', () => {
+        network.fit({ animation: { duration: 800, easingFunction: 'easeInOutQuad' } });
+    });
+
+    renderCovLegend(Array.from(covSeen));
+}
+
+
+function normalizeCov(c) {
+    const n = Number(c);
+    return Number.isFinite(n) ? Math.round(n) : String(c);
+}
+function scaleLinear(x, inMin, inMax, outMin, outMax) {
+    if (inMax === inMin) return (outMin + outMax) / 2;
+    const t = Math.max(0, Math.min(1, (x - inMin) / (inMax - inMin)));
+    return outMin + t * (outMax - outMin);
+}
+
+const covTypeColors = {
+    9900: '#8e8d8a',
+    2100: '#2a9d8f',
+    2113: '#1f77b4',
+    2900: '#9467bd',
+    1991: '#8c564b',
+    2111: '#e07a5f',
+    2112: '#f4a261',
+    3100: '#4e79a7',
+    4100: '#59a14f',
+    4200: '#76b7b2',
+    5100: '#edc949',
+    6100: '#af7aa1',
+    6200: '#ff9da7',
+    7100: '#b07aa1',
+    7200: '#9c755f',
+    7300: '#86bc86',
+    8100: '#d37295',
+    8200: '#5f9ea0',
+    8300: '#a0a0a0',
+    8400: '#bcbd22'
+};
+function getCovColor(cov) {
+    const key = normalizeCov(cov);
+    return covTypeColors[key] || '#6c757d';
+}
+
+function renderCovLegend(covList) {
+    const modal = document.getElementById('networkModal');
+    if (!modal) return;
+
+    let legend = modal.querySelector('.cov-legend');
+    if (!legend) {
+        legend = document.createElement('div');
+        legend.className = 'cov-legend';
+        legend.style.cssText = `
+            position:absolute; top:10px; right:12px; background:#ffffffd8;
+            border:1px solid #e5e5e5; border-radius:10px; padding:6px 10px; max-width:60%;
+            font:12px/1.2 Arial; display:flex; gap:10px; flex-wrap:wrap;`;
+        modal.appendChild(legend);
+    }
+    legend.innerHTML = covList.slice(0, 14).map(c => {
+        const color = getCovColor(c);
+        const name  = getCovTypeLabel(c);
+        return `<span style="display:flex;align-items:center;gap:6px;">
+            <span style="width:12px;height:12px;background:${color};border-radius:3px;border:1px solid #0001;"></span>${name}
+        </span>`;
+    }).join('');
+}
+
+
+
+
+function getCovTypeLabel(covType) {
+    return covTypeDescriptions[covType] || `סוג ${covType}`;
+}
+
+document.getElementById('networkModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeNetworkModal();
+    }
+});
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && document.getElementById('networkModal').style.display === 'block') {
+        closeNetworkModal();
+    }
+});
+
+
+
+//                      ESRI MAP CODE BELOW
+
+
   function toggleLegend() {
     const c = document.getElementById('legendContent');
     const t = document.getElementById('legendToggle');
@@ -1386,7 +2022,6 @@ async function rebuildCascadingFrom(startIndex = 0) {
   }
 }
 
-// When a higher filter changes, clear the ones below (UI) and rebuild them
 function clearBelow(startIndex) {
   for (let i = startIndex + 1; i < FILTER_ORDER.length; i++) {
     const sel = document.getElementById(FILTER_ORDER[i].id);
@@ -1394,7 +2029,6 @@ function clearBelow(startIndex) {
   }
 }
 
-// Hook change events for cascading behavior
 FILTER_ORDER.forEach(({ id }, idx) => {
   const el = document.getElementById(id);
   if (!el) return;
