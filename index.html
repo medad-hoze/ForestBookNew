@@ -1155,19 +1155,14 @@ function createNetworkVisualization(data) {
 
         const covKey = normalizeCov(cov);
         covSeen.add(covKey);
-        const label = `${keyNum}\n${year}\n${getCovTypeLabel(covKey)}`;
+        const label = `${year}\n${getCovTypeLabel(covKey)}`;
 
         const value = scaleLinear(+area || areaMin, areaMin, areaMax, 12, 36);
 
         nodeMap.set(id, {
             id,
             label,
-            title: `<div style="padding:6px;">
-                <strong>מספר מפתח:</strong> ${keyNum}<br>
-                <strong>שנה:</strong> ${year}<br>
-                <strong>סוג כיסוי:</strong> ${getCovTypeLabel(covKey)}<br>
-                <strong>שטח נטו:</strong> ${isFinite(+area) ? +area : "—"} דונם
-            </div>`,
+            title: keyNum,
             value,
             level: parseInt(year, 10) || undefined, // drives LR timeline
             shape: 'dot',
