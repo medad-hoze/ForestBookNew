@@ -1288,10 +1288,25 @@ function createNetworkVisualization(data) {
 
         const value = scaleLinear(+area || areaMin, areaMin, areaMax, 12, 36);
 
+        let title;
+        if (networkNum === 2) {
+            const startYearFrom = data.find(d => d.key_numbers_from === keyNum && d.year_from === year)?.START_YEAR_from || 'N/A';
+            const startYearTo = data.find(d => d.key_numbers_to === keyNum && d.year_to === year)?.START_YEAR_to || 'N/A';
+            if (startYearFrom !== 'N/A' && startYearFrom !== '0') {
+                title = `שנת התחלה: ${startYearFrom}`;
+            } else if (startYearTo !== 'N/A' && startYearTo !== '0') {
+                title = `שנת התחלה: ${startYearTo}`;
+            } else {
+                title = `שנת התחלה: N/A`;
+            }
+        } else {
+            title = `מספר: ${keyNum}\nשנת סקר: ${year}\nסוג כיסוי: ${cov || 'N/A'}\nשטח נטו: ${area || 'N/A'} דונם`;
+        }
+
         nodeMap.set(id, {
             id,
             label,
-            title: `${keyNum}\nשנה: ${year}\nשטח: ${area}\nרשת: ${networkNum}`,
+            title: title,
             value,
             level: parseInt(year, 10) || undefined,
             shape: nodeShape,
@@ -2825,3 +2840,4 @@ function updateInfoTable(features, FIELD) {
 
   });
 </script>
+
