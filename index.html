@@ -830,6 +830,10 @@
                                 <input type="checkbox" id="eventsLayerToggle" checked>
                                 <label for="eventsLayerToggle">שכבת אירועים</label>
                             </div>
+                            <div class="layer-toggle">
+                                <input type="checkbox" id="imagesLayerToggle" checked>
+                                <label for="imagesLayerToggle">שכבת תמונות</label>
+                            </div>
                         </div>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                             <div class="legend-section">
@@ -1743,6 +1747,8 @@ document.addEventListener('keydown', function(e) {
     let highlightSelect = null;
     let forestLayerManuallyToggled = false;
     let lastExtentJSON = null;
+    let photoPointsLayer = null;
+    let photosData = {};
 
     const map = new Map({ basemap: "satellite" });
     const view = new MapView({
@@ -2115,7 +2121,874 @@ uniqueValueInfos: [
     document.getElementById('eventsLayerToggle')?.addEventListener('change', (e) => {
       featureLayer.visible = e.target.checked;
     });
+    document.getElementById('imagesLayerToggle')?.addEventListener('change', (e) => {
+        if (photoPointsLayer) {
+            photoPointsLayer.visible = e.target.checked;
+        }
+    });
 
+// #################################################################  pics 
+
+
+
+    async function loadPhotoPoints() {
+      try {
+        const response = await fetch('shapes_pics.json');
+        if (!response.ok) {
+          throw new Error('Failed to load shapes_pics.json');
+        }
+        photosData = await response.json();
+
+        testImagePaths();
+        
+        createPhotoPointsLayer();
+      } catch (error) {
+        console.error('Error loading photo points:', error);
+        showError('Failed to load photo points: ' + error.message);
+      }
+    }
+    
+    function testImagePaths() {
+      const firstKey = Object.keys(photosData)[0];
+      if (firstKey) {
+        const data = photosData[firstKey];
+        const folderNumStr = String(data.folder_num).trim();
+        const testPic = String(data.pic_numbers.split(',')[0]).trim();
+        
+        console.log('=== Testing Image Paths ===');
+        console.log('Folder number:', folderNumStr, '(type:', typeof folderNumStr, ')');
+        console.log('Picture number:', testPic, '(type:', typeof testPic, ')');
+        console.log('Original data:', data);
+        
+        const testPaths = [
+          `pic/${folderNumStr}/${testPic}.jpg`,
+          `${window.location.origin}/pic/${folderNumStr}/${testPic}.jpg`,
+          `${window.location.protocol}//${window.location.host}/pic/${folderNumStr}/${testPic}.jpg`,
+        ];
+        
+        console.log('Testing the following paths:');
+        testPaths.forEach((path, i) => {
+          const img = new Image();
+          img.onload = () => {
+            console.log(`✅ Path ${i + 1} WORKS:`, path);
+            if (i === 1 || i === 2) {
+              console.log('>>> ABSOLUTE URL WORKS - Using this in popups <<<');
+            }
+          };
+          img.onerror = () => console.log(`❌ Path ${i + 1} failed:`, path);
+          img.src = path;
+        });
+        
+        setTimeout(() => {
+          const testImg = document.createElement('img');
+          testImg.src = `${window.location.origin}/pic/${folderNumStr}/${testPic}.jpg`;
+          testImg.style.width = '50px';
+          testImg.style.height = '50px';
+          testImg.style.position = 'fixed';
+          testImg.style.bottom = '10px';
+          testImg.style.right = '10px';
+          testImg.style.zIndex = '9999';
+          testImg.style.border = '2px solid green';
+          testImg.onload = () => {
+            console.log('✅ Test image loaded in DOM');
+            setTimeout(() => testImg.remove(), 3000);
+          };
+          testImg.onerror = () => {
+            console.log('❌ Test image failed in DOM');
+            testImg.remove();
+          };
+          document.body.appendChild(testImg);
+        }, 1000);
+      }
+    }
+
+    function createPhotoPointsLayer() {
+      require(["esri/Graphic", "esri/layers/GraphicsLayer", "esri/symbols/PictureMarkerSymbol"], 
+        function(Graphic, GraphicsLayer, PictureMarkerSymbol) {
+        
+        const graphics = [];
+        
+        for (const [coordKey, photoInfo] of Object.entries(photosData)) {
+          const [x, y] = coordKey.split('_').map(parseFloat);
+          
+          if (isNaN(x) || isNaN(y)) {
+            console.warn('Invalid coordinates:', coordKey);
+            continue;
+          }
+
+          const point = {
+            type: "point",
+            x: x,
+            y: y,
+            spatialReference: { wkid: 2039 } 
+          };
+
+          const picNumbers = photoInfo.pic_numbers.split(',').map(n => n.trim());
+          const firstPic = picNumbers[0];
+          const folderNum = String(photoInfo.folder_num).trim();
+          
+          const imageUrl = `${window.location.origin}/pic/${folderNum}/${firstPic}.jpg`;
+          
+          const pictureSymbol = {
+            type: "picture-marker",
+            url: imageUrl,
+            width: "48px",
+            height: "48px"
+          };
+          
+          const fallbackSymbol = {
+            type: "simple-marker",
+            style: "circle",
+            color: [255, 128, 0, 0.8],
+            size: "48px",
+            outline: {
+              color: [255, 255, 255],
+              width: 3
+            }
+          };
+          
+          const graphic = new Graphic({
+            geometry: point,
+            symbol: fallbackSymbol,
+            attributes: {
+              ObjectID: coordKey,
+              folder_num: photoInfo.folder_num,
+              pic_numbers: photoInfo.pic_numbers,
+              pic_array: picNumbers,
+              pic_count: picNumbers.length,
+              x: x,
+              y: y,
+              firstImage: imageUrl
+            },
+            popupTemplate: {
+              title: "תמונות - תיקייה {folder_num}",
+              content: createCarouselContentNode,
+              outFields: ["*"]
+            }
+          });
+          
+          createCircularImageMarker(imageUrl, folderNum, firstPic, picNumbers.length)
+            .then(customSymbol => {
+              if (customSymbol) {
+                graphic.symbol = customSymbol;
+              }
+            })
+            .catch(err => {
+              console.log('Using fallback symbol for:', coordKey);
+            });
+          
+          graphics.push(graphic);
+        }
+
+        photoPointsLayer = new GraphicsLayer({
+          id: "photoPoints",
+          title: "נקודות צילום",
+          graphics: graphics,
+          visible: true,
+          listMode: "show"
+        });
+
+        map.add(photoPointsLayer);
+        
+        console.log(`Loaded ${graphics.length} photo points`);
+      });
+    }
+
+    function createCircularImageMarker(imageUrl, folderNum, picNum, totalPics) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        
+        img.onload = function() {
+          try {
+            const canvas = document.createElement('canvas');
+            const size = 60; 
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+            ctx.shadowBlur = 5;
+            ctx.shadowOffsetX = 2;
+            ctx.shadowOffsetY = 2;
+            
+            ctx.beginPath();
+            ctx.arc(size/2, size/2, (size/2) - 2, 0, 2 * Math.PI);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+            
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(size/2, size/2, (size/2) - 5, 0, 2 * Math.PI);
+            ctx.clip();
+            
+            const aspectRatio = img.width / img.height;
+            let drawWidth, drawHeight, drawX, drawY;
+            
+            if (aspectRatio > 1) {
+              drawHeight = size;
+              drawWidth = size * aspectRatio;
+              drawX = (size - drawWidth) / 2;
+              drawY = 0;
+            } else {
+              drawWidth = size;
+              drawHeight = size / aspectRatio;
+              drawX = 0;
+              drawY = (size - drawHeight) / 2;
+            }
+            
+            ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+            ctx.restore();
+            
+            ctx.strokeStyle = '#ff8000';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(size/2, size/2, (size/2) - 3.5, 0, 2 * Math.PI);
+            ctx.stroke();
+            
+            if (totalPics > 1) {
+              const badgeRadius = 10;
+              const badgeX = size - badgeRadius - 3;
+              const badgeY = badgeRadius + 3;
+              
+              ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+              ctx.shadowBlur = 3;
+              ctx.shadowOffsetX = 1;
+              ctx.shadowOffsetY = 1;
+              
+              ctx.fillStyle = '#ff8000';
+              ctx.beginPath();
+              ctx.arc(badgeX, badgeY, badgeRadius, 0, 2 * Math.PI);
+              ctx.fill();
+              
+              ctx.strokeStyle = 'white';
+              ctx.lineWidth = 1.5;
+              ctx.stroke();
+              
+              ctx.shadowColor = 'transparent';
+              ctx.shadowBlur = 0;
+              
+              ctx.fillStyle = 'white';
+              ctx.font = 'bold 12px Arial';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText(totalPics.toString(), badgeX, badgeY);
+            }
+            
+            const dataUrl = canvas.toDataURL('image/png');
+            
+            const symbol = {
+              type: "picture-marker",
+              url: dataUrl,
+              width: size + "px",
+              height: size + "px",
+              xoffset: 0,
+              yoffset: 0
+            };
+            
+            resolve(symbol);
+          } catch (error) {
+            console.error('Error creating circular marker:', error);
+            reject(error);
+          }
+        };
+        
+        img.onerror = function() {
+          console.error('Failed to load image for marker:', imageUrl);
+          reject(new Error('Image load failed'));
+        };
+        
+        img.src = imageUrl;
+      });
+    }
+
+    view.when(() => {
+      view.on("pointer-move", (event) => {
+        view.hitTest(event).then((response) => {
+          if (response.results.length > 0) {
+            const graphic = response.results.find(
+              result => result.graphic.layer && result.graphic.layer.id === "photoPoints"
+            );
+            if (graphic) {
+              view.container.style.cursor = "pointer";
+            } else {
+              view.container.style.cursor = "default";
+            }
+          } else {
+            view.container.style.cursor = "default";
+          }
+        });
+      });
+    });
+
+    function createCarouselContent(feature) {
+      const attrs = feature.graphic.attributes;
+      const folderNum = attrs.folder_num;
+      const picArray = attrs.pic_array;
+      const uniqueId = 'carousel-' + attrs.ObjectID.replace(/\./g, '-').replace(/_/g, '-');
+      
+      if (!picArray || picArray.length === 0) {
+        return '<div>אין תמונות זמינות</div>';
+      }
+
+      let carouselHTML = `
+        <div id="${uniqueId}" class="photo-carousel-container">
+          <style>
+            .photo-carousel-container {
+              position: relative;
+              width: 100%;
+              max-width: 400px;
+              margin: 0 auto;
+            }
+            .carousel-wrapper {
+              position: relative;
+              width: 100%;
+              height: 300px;
+              overflow: hidden;
+              background: #f0f0f0;
+              border-radius: 8px;
+            }
+            .carousel-image {
+              width: 100%;
+              height: 100%;
+              object-fit: contain;
+              display: none;
+            }
+            .carousel-image.active {
+              display: block;
+            }
+            .carousel-controls {
+              position: absolute;
+              top: 50%;
+              transform: translateY(-50%);
+              width: 100%;
+              display: flex;
+              justify-content: space-between;
+              padding: 0 10px;
+              box-sizing: border-box;
+              pointer-events: none;
+            }
+            .carousel-controls button {
+              pointer-events: auto;
+            }
+            .carousel-btn {
+              background: rgba(0, 0, 0, 0.5);
+              color: white;
+              border: none;
+              padding: 10px 15px;
+              cursor: pointer;
+              border-radius: 4px;
+              font-size: 18px;
+              transition: background 0.3s;
+            }
+            .carousel-btn:hover {
+              background: rgba(0, 0, 0, 0.7);
+            }
+            .carousel-btn:disabled {
+              opacity: 0.3;
+              cursor: not-allowed;
+            }
+            .carousel-indicators {
+              text-align: center;
+              padding: 10px 0;
+            }
+            .indicator {
+              display: inline-block;
+              width: 10px;
+              height: 10px;
+              border-radius: 50%;
+              background: #ccc;
+              margin: 0 5px;
+              cursor: pointer;
+              transition: background 0.3s;
+            }
+            .indicator.active {
+              background: #ff8000;
+            }
+            .image-counter {
+              text-align: center;
+              padding: 5px;
+              color: #666;
+              font-size: 14px;
+            }
+            .image-error {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              height: 100%;
+              color: #999;
+              font-size: 14px;
+              padding: 20px;
+              text-align: center;
+            }
+            .debug-info {
+              font-size: 11px;
+              color: #666;
+              margin-top: 10px;
+              word-break: break-all;
+            }
+          </style>
+          
+          <div class="carousel-wrapper">
+      `;
+      
+ 
+      const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+      
+
+      picArray.forEach((picNum, index) => {
+        const picNumStr    = String(picNum).trim();
+        const folderNumStr = String(folderNum).trim();
+        const imagePath    = `${window.location.origin}/${basePath}pic/${folderNumStr}/${picNumStr}.jpg`.replace(/\/+/g, '/').replace('http:/', 'http://').replace('https:/', 'https://');
+        
+        console.log(`Image ${index + 1}:`, {
+          folderNum: folderNumStr,
+          picNum: picNumStr,
+          absolutePath: imagePath
+        });
+        
+        carouselHTML += `
+          <img class="carousel-image ${index === 0 ? 'active' : ''}" 
+               src="${imagePath}" 
+               alt="תמונה ${picNumStr}"
+               onerror="handleImageError(this, '${imagePath}', '${picNumStr}', '${folderNumStr}');"
+               onload="console.log('✓ Successfully loaded: ${imagePath}');"
+               data-index="${index}">
+        `;
+      });
+      
+      if (picArray.length > 1) {
+        carouselHTML += `
+            <div class="carousel-controls">
+              <button class="carousel-btn prev-btn" onclick="changeSlide('${uniqueId}', -1)">❮</button>
+              <button class="carousel-btn next-btn" onclick="changeSlide('${uniqueId}', 1)">❯</button>
+            </div>
+          </div>
+          
+          <div class="image-counter">
+            <span class="current-image">1</span> / ${picArray.length}
+          </div>
+          
+          <div class="carousel-indicators">
+        `;
+        
+        picArray.forEach((_, index) => {
+          carouselHTML += `
+            <span class="indicator ${index === 0 ? 'active' : ''}" 
+                  onclick="goToSlide('${uniqueId}', ${index})"
+                  data-index="${index}"></span>
+          `;
+        });
+        
+        carouselHTML += '</div>';
+      } else {
+        carouselHTML += '</div>';
+      }
+      
+      carouselHTML += '</div>';
+      
+      setTimeout(() => {
+        initCarousel(uniqueId);
+      }, 100);
+      
+      return carouselHTML;
+    }
+
+    function createCarouselContentNode(feature) {
+      const attrs = feature.graphic.attributes;
+      const folderNum = String(attrs.folder_num).trim();
+      const picArray = attrs.pic_array;
+      
+      if (!picArray || picArray.length === 0) {
+        const div = document.createElement('div');
+        div.textContent = 'אין תמונות זמינות';
+        return div;
+      }
+
+      const container = document.createElement('div');
+      container.className = 'photo-carousel-container';
+      container.style.width = '100%';
+      container.style.maxWidth = '450px';
+      container.style.margin = '0 auto';
+      
+      const wrapper = document.createElement('div');
+      wrapper.className = 'carousel-wrapper';
+      wrapper.style.position = 'relative';
+      wrapper.style.width = '100%';
+      wrapper.style.height = '350px';
+      wrapper.style.overflow = 'hidden';
+      wrapper.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+      wrapper.style.borderRadius = '12px';
+      wrapper.style.boxShadow = '0 10px 25px rgba(0,0,0,0.2)';
+      
+      let currentIndex = 0;
+      
+      if (picArray.length > 1) {
+        const thumbContainer = document.createElement('div');
+        thumbContainer.style.display = 'flex';
+        thumbContainer.style.gap = '8px';
+        thumbContainer.style.padding = '10px';
+        thumbContainer.style.overflowX = 'auto';
+        thumbContainer.style.background = '#f7f7f7';
+        thumbContainer.style.borderRadius = '8px';
+        thumbContainer.style.marginBottom = '10px';
+        thumbContainer.style.maxHeight = '80px';
+        
+        picArray.forEach((picNum, index) => {
+          const picNumStr = String(picNum).trim();
+          const thumb = document.createElement('img');
+          thumb.src = `${window.location.origin}/pic/${folderNum}/${picNumStr}.jpg`;
+          thumb.style.width = '60px';
+          thumb.style.height = '60px';
+          thumb.style.objectFit = 'cover';
+          thumb.style.borderRadius = '6px';
+          thumb.style.cursor = 'pointer';
+          thumb.style.border = index === 0 ? '3px solid #ff8000' : '3px solid transparent';
+          thumb.style.transition = 'all 0.3s ease';
+          thumb.dataset.index = index;
+          
+          thumb.onclick = function() {
+            currentIndex = index;
+            updateSlide();
+            updateThumbnails();
+          };
+          
+          thumb.onmouseover = function() {
+            if (currentIndex !== index) {
+              this.style.transform = 'scale(1.1)';
+              this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+            }
+          };
+          
+          thumb.onmouseout = function() {
+            this.style.transform = 'scale(1)';
+            this.style.boxShadow = 'none';
+          };
+          
+          thumbContainer.appendChild(thumb);
+        });
+        
+        container.appendChild(thumbContainer);
+        
+        function updateThumbnails() {
+          thumbContainer.querySelectorAll('img').forEach((thumb, idx) => {
+            thumb.style.border = idx === currentIndex ? '3px solid #ff8000' : '3px solid transparent';
+          });
+        }
+      }
+      
+      const images = [];
+      picArray.forEach((picNum, index) => {
+        const picNumStr = String(picNum).trim();
+        const imgContainer = document.createElement('div');
+        imgContainer.style.position = 'absolute';
+        imgContainer.style.width = '100%';
+        imgContainer.style.height = '100%';
+        imgContainer.style.display = index === 0 ? 'flex' : 'none';
+        imgContainer.style.alignItems = 'center';
+        imgContainer.style.justifyContent = 'center';
+        imgContainer.style.transition = 'opacity 0.5s ease';
+        
+        const img = document.createElement('img');
+        const absoluteUrl = `${window.location.origin}/pic/${folderNum}/${picNumStr}.jpg`;
+        img.src = absoluteUrl;
+        img.alt = `תמונה ${picNumStr}`;
+        img.style.maxWidth = '100%';
+        img.style.maxHeight = '100%';
+        img.style.objectFit = 'contain';
+        img.style.borderRadius = '8px';
+        img.dataset.index = index;
+        
+        img.onload = function() {
+          console.log('✓ Loaded in popup:', absoluteUrl);
+        };
+        
+        img.onerror = function() {
+          console.log('✗ Failed in popup:', absoluteUrl);
+          imgContainer.innerHTML = `
+            <div style="color: white; text-align: center; padding: 20px;">
+              <div style="font-size: 48px; margin-bottom: 10px;">📷</div>
+              <div>לא ניתן לטעון תמונה ${picNumStr}</div>
+              <small style="opacity: 0.7; font-size: 11px;">${absoluteUrl}</small>
+            </div>
+          `;
+        };
+        
+        imgContainer.appendChild(img);
+        images.push(imgContainer);
+        wrapper.appendChild(imgContainer);
+      });
+      
+      container.appendChild(wrapper);
+      
+      if (picArray.length > 1) {
+        const controls = document.createElement('div');
+        controls.style.position = 'absolute';
+        controls.style.top = '50%';
+        controls.style.transform = 'translateY(-50%)';
+        controls.style.width = '100%';
+        controls.style.display = 'flex';
+        controls.style.justifyContent = 'space-between';
+        controls.style.padding = '0 15px';
+        controls.style.boxSizing = 'border-box';
+        controls.style.pointerEvents = 'none';
+        
+        const prevBtn = document.createElement('button');
+        prevBtn.innerHTML = '‹';
+        prevBtn.style.background = 'rgba(255, 255, 255, 0.9)';
+        prevBtn.style.color = '#333';
+        prevBtn.style.border = 'none';
+        prevBtn.style.width = '40px';
+        prevBtn.style.height = '40px';
+        prevBtn.style.borderRadius = '50%';
+        prevBtn.style.cursor = 'pointer';
+        prevBtn.style.fontSize = '24px';
+        prevBtn.style.fontWeight = 'bold';
+        prevBtn.style.pointerEvents = 'auto';
+        prevBtn.style.transition = 'all 0.3s ease';
+        prevBtn.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
+        
+        prevBtn.onmouseover = function() {
+          this.style.transform = 'scale(1.1)';
+          this.style.background = 'white';
+        };
+        prevBtn.onmouseout = function() {
+          this.style.transform = 'scale(1)';
+          this.style.background = 'rgba(255, 255, 255, 0.9)';
+        };
+        
+        prevBtn.onclick = function() {
+          currentIndex = (currentIndex - 1 + images.length) % images.length;
+          updateSlide();
+          updateThumbnails();
+        };
+        
+        const nextBtn = document.createElement('button');
+        nextBtn.innerHTML = '›';
+        nextBtn.style.background = 'rgba(255, 255, 255, 0.9)';
+        nextBtn.style.color = '#333';
+        nextBtn.style.border = 'none';
+        nextBtn.style.width = '40px';
+        nextBtn.style.height = '40px';
+        nextBtn.style.borderRadius = '50%';
+        nextBtn.style.cursor = 'pointer';
+        nextBtn.style.fontSize = '24px';
+        nextBtn.style.fontWeight = 'bold';
+        nextBtn.style.pointerEvents = 'auto';
+        nextBtn.style.transition = 'all 0.3s ease';
+        nextBtn.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
+        
+        nextBtn.onmouseover = function() {
+          this.style.transform = 'scale(1.1)';
+          this.style.background = 'white';
+        };
+        nextBtn.onmouseout = function() {
+          this.style.transform = 'scale(1)';
+          this.style.background = 'rgba(255, 255, 255, 0.9)';
+        };
+        
+        nextBtn.onclick = function() {
+          currentIndex = (currentIndex + 1) % images.length;
+          updateSlide();
+          updateThumbnails();
+        };
+        
+        controls.appendChild(prevBtn);
+        controls.appendChild(nextBtn);
+        wrapper.appendChild(controls);
+        
+        const indicators = document.createElement('div');
+        indicators.style.position = 'absolute';
+        indicators.style.bottom = '15px';
+        indicators.style.width = '100%';
+        indicators.style.textAlign = 'center';
+        indicators.style.pointerEvents = 'none';
+        
+        picArray.forEach((_, index) => {
+          const dot = document.createElement('span');
+          dot.style.display = 'inline-block';
+          dot.style.width = index === 0 ? '24px' : '8px';
+          dot.style.height = '8px';
+          dot.style.borderRadius = '4px';
+          dot.style.background = index === 0 ? 'white' : 'rgba(255, 255, 255, 0.5)';
+          dot.style.margin = '0 4px';
+          dot.style.cursor = 'pointer';
+          dot.style.transition = 'all 0.3s ease';
+          dot.style.pointerEvents = 'auto';
+          dot.dataset.index = index;
+          
+          dot.onclick = function() {
+            currentIndex = index;
+            updateSlide();
+            updateThumbnails();
+            updateDots();
+          };
+          
+          indicators.appendChild(dot);
+        });
+        
+        wrapper.appendChild(indicators);
+        
+        const counter = document.createElement('div');
+        counter.style.textAlign = 'center';
+        counter.style.padding = '10px';
+        counter.style.color = '#666';
+        counter.style.fontSize = '14px';
+        counter.style.fontWeight = '500';
+        counter.innerHTML = `תמונה <span id="current" style="color: #ff8000; font-weight: bold;">1</span> מתוך ${images.length}`;
+        container.appendChild(counter);
+        
+        function updateSlide() {
+          images.forEach((imgContainer, idx) => {
+            imgContainer.style.display = idx === currentIndex ? 'flex' : 'none';
+          });
+          const currentSpan = counter.querySelector('#current');
+          if (currentSpan) {
+            currentSpan.textContent = currentIndex + 1;
+          }
+        }
+        
+        function updateDots() {
+          indicators.querySelectorAll('span').forEach((dot, idx) => {
+            dot.style.width = idx === currentIndex ? '24px' : '8px';
+            dot.style.background = idx === currentIndex ? 'white' : 'rgba(255, 255, 255, 0.5)';
+          });
+        }
+        
+        function updateThumbnails() {
+          const thumbs = container.querySelectorAll('.photo-carousel-container > div:first-child img');
+          thumbs.forEach((thumb, idx) => {
+            thumb.style.border = idx === currentIndex ? '3px solid #ff8000' : '3px solid transparent';
+          });
+          updateDots();
+        }
+      }
+      
+      return container;
+    }
+
+    window.currentSlideIndex = {};
+    
+    window.handleImageError = function(img, path, picNum, folderNum) {
+      console.error('Failed to load image:', path);
+      
+      const picNumStr = String(picNum).trim();
+      const folderNumStr = String(folderNum).trim();
+      
+      const origin = window.location.origin;
+      const alternativePaths = [
+        `${origin}/pic/${folderNumStr}/${picNumStr}.jpg`,
+        `${origin}/pic/${folderNumStr}/${picNumStr}.JPG`,  
+        `${window.location.protocol}//${window.location.host}/pic/${folderNumStr}/${picNumStr}.jpg`,
+        `${origin}/pic/${folderNumStr}/${picNumStr.padStart(2, '0')}.jpg`,  
+        `${origin}/pic/${folderNumStr.padStart(2, '0')}/${picNumStr}.jpg`,  
+      ];
+      
+      if (!img.dataset.retryCount) {
+        img.dataset.retryCount = '0';
+      }
+      
+      const retryCount = parseInt(img.dataset.retryCount);
+      if (retryCount < alternativePaths.length) {
+        console.log(`Attempt ${retryCount + 1}: Trying path:`, alternativePaths[retryCount]);
+        img.src = alternativePaths[retryCount];
+        img.dataset.retryCount = (retryCount + 1).toString();
+      } else {
+        img.outerHTML = `
+          <div class='image-error' style='display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #999; font-size: 14px; padding: 20px; text-align: center;'>
+            <div>❌ לא ניתן לטעון תמונה</div>
+            <div style='font-size: 11px; color: #666; margin-top: 10px; word-break: break-all;'>
+              תיקייה: "${folderNumStr}"<br>
+              תמונה: "${picNumStr}.jpg"<br>
+              <br>
+              נתיב שנוסה:<br>
+              ${alternativePaths[0]}
+            </div>
+          </div>
+        `;
+      }
+    };
+    
+    window.changeSlide = function(carouselId, direction) {
+      const container = document.getElementById(carouselId);
+      if (!container) return;
+      
+      const images = container.querySelectorAll('.carousel-image');
+      const indicators = container.querySelectorAll('.indicator');
+      const counter = container.querySelector('.current-image');
+      
+      let currentIndex = window.currentSlideIndex[carouselId] || 0;
+      let newIndex = currentIndex + direction;
+      
+      // Wrap around
+      if (newIndex < 0) newIndex = images.length - 1;
+      if (newIndex >= images.length) newIndex = 0;
+      
+      // Update display
+      images[currentIndex].classList.remove('active');
+      images[newIndex].classList.add('active');
+      
+      if (indicators.length > 0) {
+        indicators[currentIndex].classList.remove('active');
+        indicators[newIndex].classList.add('active');
+      }
+      
+      if (counter) {
+        counter.textContent = newIndex + 1;
+      }
+      
+      window.currentSlideIndex[carouselId] = newIndex;
+    };
+    
+    window.goToSlide = function(carouselId, index) {
+      const container = document.getElementById(carouselId);
+      if (!container) return;
+      
+      const images = container.querySelectorAll('.carousel-image');
+      const indicators = container.querySelectorAll('.indicator');
+      const counter = container.querySelector('.current-image');
+      
+      const currentIndex = window.currentSlideIndex[carouselId] || 0;
+      
+      // Update display
+      images[currentIndex].classList.remove('active');
+      images[index].classList.add('active');
+      
+      indicators[currentIndex].classList.remove('active');
+      indicators[index].classList.add('active');
+      
+      if (counter) {
+        counter.textContent = index + 1;
+      }
+      
+      window.currentSlideIndex[carouselId] = index;
+    };
+    
+    function initCarousel(carouselId) {
+      window.currentSlideIndex[carouselId] = 0;
+    }
+
+    
+    document.getElementById('photoLayerToggle')?.addEventListener('change', (e) => {
+      if (photoPointsLayer) {
+        photoPointsLayer.visible = e.target.checked;
+      }
+    });
+
+    view.when(() => {
+      loadPhotoPoints();
+    });
+
+    map.addMany([featureForest, featureLayer]);
+
+
+    // ##################################################################################################################################
 
 
 let layoutState = 0; // 0 = split (2/3 map, 1/3 table), 1 = map only, 2 = table only
@@ -2300,27 +3173,23 @@ async function queryDistinctValues(fieldName, where) {
     .filter(v => v != null && v !== "" && v !== "null" && v !== "undefined");
 }
 
-// Replace options in a <select>, keep the first "הכל", try to preserve selection if still valid
 function setSelectOptions(selectId, values) {
   const sel = document.getElementById(selectId);
   if (!sel) return;
   const old = sel.value || "";
-  // clear (keep index 0 = "הכל")
   while (sel.options.length > 1) sel.remove(1);
   values.forEach(v => {
     const opt = document.createElement('option');
     opt.value = v; opt.textContent = v;
     sel.appendChild(opt);
   });
-  // keep previous selection if still available, else reset to ""
   if (old && values.includes(old)) sel.value = old; else sel.value = "";
 }
 
-// Rebuild the dropdowns from a starting index downward (start changed → update below)
 async function rebuildCascadingFrom(startIndex = 0) {
   for (let i = startIndex; i < FILTER_ORDER.length; i++) {
     const { id, fieldKey } = FILTER_ORDER[i];
-    const where = buildWhereForCascading(i); // only filters above i, plus type/year
+    const where = buildWhereForCascading(i); 
     const values = await queryDistinctValues(FIELD[fieldKey], where);
     setSelectOptions(id, values);
   }
@@ -2340,29 +3209,22 @@ FILTER_ORDER.forEach(({ id }, idx) => {
     forestLayerManuallyToggled = false;
     clearBelow(idx);
     await rebuildCascadingFrom(idx + 1);
-    debouncedApply(); // refresh layer/table with full WHERE (all chosen filters)
+    debouncedApply(); 
   });
 });
 
-// Rebuild all filters (used on boot and when year/type changes)
 async function rebuildAllFilters() {
-  // First, (re)build top-level using only type/year
   await rebuildCascadingFrom(0);
 }
 
-// Replace your old populateFiltersServer with this:
 async function populateFiltersServer() {
-  // Ensure field mapping for region exists
   FIELD.region = firstExisting(featureLayer, ["RegionName","REGION"]);
-  // Initial population based on *current* event-type + year (if any), no other filters
   await rebuildAllFilters();
 }
 
-// Update cascading choices when event-type card or year range changes:
 const _origUpdateEventTypeCountsServer = updateEventTypeCountsServer;
 updateEventTypeCountsServer = async function(baseWhere) {
   await _origUpdateEventTypeCountsServer(baseWhere);
-  // If event type changed counts, also refresh the cascades so numbers reflect it
   await rebuildAllFilters();
 };
 
@@ -2372,7 +3234,6 @@ onYearSelectChange = function() {
   rebuildAllFilters();
 };
 
-// Also watch the TimeSlider (already calls applyFilters). Add a light cascade refresh:
 const _origInitializeTimeSlider = initializeTimeSlider;
 initializeTimeSlider = async function() {
   await _origInitializeTimeSlider();
