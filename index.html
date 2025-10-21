@@ -2699,7 +2699,7 @@ uniqueValueInfos: [
         imgContainer.style.transition = 'opacity 0.5s ease';
         
         const img = document.createElement('img');
-        const absoluteUrl = `${window.location.origin}/pic/${folderNum}/${picNumStr}.jpg`;
+        const absoluteUrl = new URL(`pic/${folderNum}/${picNumStr}.jpg`, document.baseURI).href;
         img.src = absoluteUrl;
         img.alt = `תמונה ${picNumStr}`;
         img.style.maxWidth = '100%';
