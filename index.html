@@ -2645,7 +2645,8 @@ uniqueValueInfos: [
         picArray.forEach((picNum, index) => {
           const picNumStr = String(picNum).trim();
           const thumb = document.createElement('img');
-          thumb.src = `${window.location.origin}/pic/${folderNum}/${picNumStr}.jpg`;
+          thumb.src = new URL(`pic/${folderNum}/${picNumStr}.jpg`, document.baseURI).href;
+
           thumb.style.width = '60px';
           thumb.style.height = '60px';
           thumb.style.objectFit = 'cover';
