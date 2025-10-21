@@ -2546,8 +2546,8 @@ uniqueValueInfos: [
         const picNumStr    = String(picNum).trim();
         const folderNumStr = String(folderNum).trim();
 
-        // Build relative to the current page (document.baseURI accounts for repo subfolder on GitHub Pages)
         const imageURL = new URL(`pic/${folderNumStr}/${picNumStr}.jpg`, document.baseURI).href;
+
         console.log(`Image ${index + 1}:`, {
           folderNum: folderNumStr,
           picNum: picNumStr,
