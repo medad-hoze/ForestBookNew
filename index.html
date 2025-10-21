@@ -2229,8 +2229,8 @@ uniqueValueInfos: [
           const firstPic = picNumbers[0];
           const folderNum = String(photoInfo.folder_num).trim();
           
-          // const imageUrl = `${window.location.origin}/pic/${folderNum}/${firstPic}.jpg`;
-          const imageUrl = `pic/${folderNum}/${firstPic}.jpg`
+          const imageUrl = new URL(`pic/${folderNum}/${firstPic}.jpg`, document.baseURI).href;
+          
           
           const pictureSymbol = {
             type: "picture-marker",
