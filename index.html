@@ -2886,6 +2886,7 @@ uniqueValueInfos: [
       
       const origin = window.location.origin;
       const alternativePaths = [
+        new URL(`pic/${folderNum}/${picNumStr}.jpg`, document.baseURI).href,
         `${origin}/pic/${folderNumStr}/${picNumStr}.jpg`,
         `${origin}/pic/${folderNumStr}/${picNumStr}.JPG`,  
         `${window.location.protocol}//${window.location.host}/pic/${folderNumStr}/${picNumStr}.jpg`,
