@@ -2183,7 +2183,8 @@ uniqueValueInfos: [
         
         setTimeout(() => {
           const testImg = document.createElement('img');
-          testImg.src = `${window.location.origin}/pic/${folderNumStr}/${testPic}.jpg`;
+          testImg.src = new URL(`pic/${folderNumStr}/${testPic}.jpg`, document.baseURI).href;
+          new URL(`pic/${folderNum}/${firstPic}.jpg`, document.baseURI).href;
           testImg.style.width = '50px';
           testImg.style.height = '50px';
           testImg.style.position = 'fixed';
