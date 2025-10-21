@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html dir="rtl">
 <head>
-      <base href="/ForestBookNew/">
+      <!-- <base href="/ForestBookNew/"> -->
 
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -1034,7 +1034,7 @@ async function loadDataset(filename, datasetNumber) {
         }
         
         const text = await response.text();
-        console.log(`${filename} loaded: ${text.length} characters`);
+        // console.log(`${filename} loaded: ${text.length} characters`);
         
         if (!text || text.trim().length === 0) {
             throw new Error(`${filename} is empty`);
@@ -1048,12 +1048,12 @@ async function loadDataset(filename, datasetNumber) {
             if (!Array.isArray(data)) {
                 data = [data];
             }
-            console.log(`Successfully parsed ${filename} as standard JSON`);
+            // console.log(`Successfully parsed ${filename} as standard JSON`);
         } catch (parseError) {
-            console.log(`Standard JSON parsing failed: ${parseError.message}`);
+            // console.log(`Standard JSON parsing failed: ${parseError.message}`);
             
             if (trimmedText.startsWith('[') && trimmedText.endsWith(']')) {
-                console.log('Attempting to extract individual objects from array format...');
+                // console.log('Attempting to extract individual objects from array format...');
                 
                 const innerContent = trimmedText.slice(1, -1);
                 
@@ -1077,7 +1077,7 @@ async function loadDataset(filename, datasetNumber) {
             }
             
             if (!data || data.length === 0) {
-                console.log('Attempting line-by-line parsing...');
+                // console.log('Attempting line-by-line parsing...');
                 data = [];
                 const lines = text.split('\n');
                 let currentObject = '';
@@ -1120,8 +1120,8 @@ async function loadDataset(filename, datasetNumber) {
                 const match = parseError.message.match(/position (\d+)/);
                 if (match) {
                     const errorPos = parseInt(match[1]);
-                    console.log(`Parse error at position ${errorPos}`);
-                    console.log(`Characters around error: ...${text.substring(Math.max(0, errorPos - 50), Math.min(text.length, errorPos + 50))}...`);
+                    // console.log(`Parse error at position ${errorPos}`);
+                    // console.log(`Characters around error: ...${text.substring(Math.max(0, errorPos - 50), Math.min(text.length, errorPos + 50))}...`);
                 }
                 throw new Error(`Could not parse any valid data from ${filename}`);
             }
@@ -1143,20 +1143,20 @@ async function loadDataset(filename, datasetNumber) {
         
         if (datasetNumber === 1) {
             networkData1 = data || [];
-            console.log(`✓ Network 1: ${networkData1.length} records loaded from ${filename}`);
+            // console.log(`✓ Network 1: ${networkData1.length} records loaded from ${filename}`);
         } else {
             networkData2 = data || [];
-            console.log(`✓ Network 2: ${networkData2.length} records loaded from ${filename}`);
+            // console.log(`✓ Network 2: ${networkData2.length} records loaded from ${filename}`);
         }
         
     } catch (error) {
-        console.error(`Error loading ${filename}:`, error.message);
+        // console.error(`Error loading ${filename}:`, error.message);
         if (datasetNumber === 1) {
             networkData1 = [];
-            console.warn('⚠ Network 1 data not available');
+            // console.warn('⚠ Network 1 data not available');
         } else {
             networkData2 = [];
-            console.warn('⚠ Network 2 data not available - please check if the file is valid JSON');
+            // console.warn('⚠ Network 2 data not available - please check if the file is valid JSON');
         }
     }
 }
@@ -2145,7 +2145,7 @@ uniqueValueInfos: [
         
         createPhotoPointsLayer();
       } catch (error) {
-        console.error('Error loading photo points:', error);
+        // console.error('Error loading photo points:', error);
         showError('Failed to load photo points: ' + error.message);
       }
     }
@@ -2157,10 +2157,10 @@ uniqueValueInfos: [
         const folderNumStr = String(data.folder_num).trim();
         const testPic = String(data.pic_numbers.split(',')[0]).trim();
         
-        console.log('=== Testing Image Paths ===');
-        console.log('Folder number:', folderNumStr, '(type:', typeof folderNumStr, ')');
-        console.log('Picture number:', testPic, '(type:', typeof testPic, ')');
-        console.log('Original data:', data);
+        // console.log('=== Testing Image Paths ===');
+        // console.log('Folder number:', folderNumStr, '(type:', typeof folderNumStr, ')');
+        // console.log('Picture number:', testPic, '(type:', typeof testPic, ')');
+        // console.log('Original data:', data);
         
         const testPaths = [
           `pic/${folderNumStr}/${testPic}.jpg`,
@@ -2168,7 +2168,7 @@ uniqueValueInfos: [
           `${window.location.protocol}//${window.location.host}/pic/${folderNumStr}/${testPic}.jpg`,
         ];
         
-        console.log('Testing the following paths:');
+        // console.log('Testing the following paths:');
         testPaths.forEach((path, i) => {
           const img = new Image();
           img.onload = () => {
@@ -2196,7 +2196,7 @@ uniqueValueInfos: [
             setTimeout(() => testImg.remove(), 3000);
           };
           testImg.onerror = () => {
-            console.log('❌ Test image failed in DOM');
+            // console.log('❌ Test image failed in DOM');
             testImg.remove();
           };
           document.body.appendChild(testImg);
@@ -2214,7 +2214,7 @@ uniqueValueInfos: [
           const [x, y] = coordKey.split('_').map(parseFloat);
           
           if (isNaN(x) || isNaN(y)) {
-            console.warn('Invalid coordinates:', coordKey);
+            // console.warn('Invalid coordinates:', coordKey);
             continue;
           }
 
@@ -2229,7 +2229,7 @@ uniqueValueInfos: [
           const firstPic = picNumbers[0];
           const folderNum = String(photoInfo.folder_num).trim();
           
-          const imageUrl = `${window.location.origin}/pic/${folderNum}/${firstPic}.jpg`;
+          const imageURL = new URL(`pic/${folderNumStr}/${picNumStr}.jpg`, document.baseURI).href;
           
           const pictureSymbol = {
             type: "picture-marker",
@@ -2292,7 +2292,7 @@ uniqueValueInfos: [
 
         map.add(photoPointsLayer);
         
-        console.log(`Loaded ${graphics.length} photo points`);
+        // console.log(`Loaded ${graphics.length} photo points`);
       });
     }
 
@@ -2395,13 +2395,13 @@ uniqueValueInfos: [
             
             resolve(symbol);
           } catch (error) {
-            console.error('Error creating circular marker:', error);
+            // console.error('Error creating circular marker:', error);
             reject(error);
           }
         };
         
         img.onerror = function() {
-          console.error('Failed to load image for marker:', imageUrl);
+        //   console.error('Failed to load image for marker:', imageUrl);
           reject(new Error('Image load failed'));
         };
         
@@ -2540,9 +2540,7 @@ uniqueValueInfos: [
           <div class="carousel-wrapper">
       `;
       
- 
-      const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
-      
+       
 
       picArray.forEach((picNum, index) => {
         const picNumStr    = String(picNum).trim();
@@ -2713,7 +2711,7 @@ uniqueValueInfos: [
         };
         
         img.onerror = function() {
-          console.log('✗ Failed in popup:', absoluteUrl);
+        //   console.log('✗ Failed in popup:', absoluteUrl);
           imgContainer.innerHTML = `
             <div style="color: white; text-align: center; padding: 20px;">
               <div style="font-size: 48px; margin-bottom: 10px;">📷</div>
@@ -2879,7 +2877,7 @@ uniqueValueInfos: [
     window.currentSlideIndex = {};
     
     window.handleImageError = function(img, path, picNum, folderNum) {
-      console.error('Failed to load image:', path);
+    //   console.error('Failed to load image:', path);
       
       const picNumStr = String(picNum).trim();
       const folderNumStr = String(folderNum).trim();
@@ -2899,7 +2897,7 @@ uniqueValueInfos: [
       
       const retryCount = parseInt(img.dataset.retryCount);
       if (retryCount < alternativePaths.length) {
-        console.log(`Attempt ${retryCount + 1}: Trying path:`, alternativePaths[retryCount]);
+        // console.log(`Attempt ${retryCount + 1}: Trying path:`, alternativePaths[retryCount]);
         img.src = alternativePaths[retryCount];
         img.dataset.retryCount = (retryCount + 1).toString();
       } else {
@@ -3261,7 +3259,7 @@ function buildWhere() {
     parts.push(`${activeEventType.field} = ${sqlString(activeEventType.value)}`);
   }
 
-  console.log("Active filters:", f);
+//   console.log("Active filters:", f);
 
   if (FIELD.DistrictName && f.DistrictName) parts.push(`${FIELD.DistrictName} = ${sqlString(f.DistrictName)}`);
   if (FIELD.region && f.region) parts.push(`${FIELD.region} = ${sqlString(f.region)}`);
@@ -3694,7 +3692,7 @@ function updateInfoTable(features, FIELD) {
         await initializeTimeSlider();
         await applyFilters();
       } catch (e) {
-        console.error(e);
+        // console.error(e);
         showError("שגיאה בטעינת הנתונים");
       } finally {
         const loading = document.getElementById('loading');
