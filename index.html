@@ -2229,7 +2229,8 @@ uniqueValueInfos: [
           const firstPic = picNumbers[0];
           const folderNum = String(photoInfo.folder_num).trim();
           
-          const imageURL = new URL(`pic/${folderNumStr}/${picNumStr}.jpg`, document.baseURI).href;
+          // const imageUrl = `${window.location.origin}/pic/${folderNum}/${firstPic}.jpg`;
+          const imageUrl = `pic/${folderNum}/${firstPic}.jpg`
           
           const pictureSymbol = {
             type: "picture-marker",
@@ -2546,7 +2547,7 @@ uniqueValueInfos: [
         const picNumStr    = String(picNum).trim();
         const folderNumStr = String(folderNum).trim();
 
-        const imageURL = new URL(`pic/${folderNumStr}/${picNumStr}.jpg`, document.baseURI).href;
+        // const imageURL = new URL(`pic/${folderNumStr}/${picNumStr}.jpg`, document.baseURI).href;
 
         console.log(`Image ${index + 1}:`, {
           folderNum: folderNumStr,
